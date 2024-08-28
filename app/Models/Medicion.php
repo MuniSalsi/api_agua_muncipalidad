@@ -27,7 +27,7 @@ class Medicion extends Model
     ];
 
     // Define la relación con el modelo Estado
-    public function estado(): BelongsTo
+    public function obtenerEstado(): BelongsTo
     {
         return $this->belongsTo(Estado::class, 'estado_id');
     }

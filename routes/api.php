@@ -14,5 +14,5 @@ Route::prefix('mediciones')->group(function () {
     Route::get('/logut', [AuthController::class, 'logout'])->name('api.logout');
     Route::get('/imagen/{nroCuenta}/{fecha}', [MedicionController::class, 'obtenerImagenPorCuentaYFecha'])->name('api.medidor_imagen');
     Route::get('/test', [MedicionController::class, 'cargarMediciones']);
-    Route::get('/exportar', [MedicionController::class, 'exportarMediciones']);
+    Route::get('/exportar', [MedicionController::class, 'exportarMediciones'])->name('api_exportar_mediciones');
 });

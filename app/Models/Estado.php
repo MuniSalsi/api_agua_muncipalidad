@@ -10,7 +10,7 @@ class Estado extends Model
 {
     use HasFactory;
     protected $table = 'estados';
-    protected $fillabe = ['tipo'];
+    protected $fillable  = ['tipo'];
 
     public function mediciones(): HasMany
     {
