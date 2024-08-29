@@ -22,6 +22,7 @@ class Medicion extends Model
         'medicion',
         'consumo',
         'fecha',
+        'periodo',
         'foto_medidor',
         'estado_id'
     ];

@@ -121,13 +121,14 @@
 
         <!-- Botones centrados -->
         <div class="text-center mb-4 btn-container">
-            <a class="btn btn-danger btn-lg" href="{{ route('api_exportar_mediciones') }}">
+            <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#periodoModal">
                 <i class="bi bi-file-earmark-text"></i> Generar Reporte
-            </a>
+            </button>
             <a class="btn btn-success btn-lg" href="#">
                 <i class="bi bi-calculator"></i> Calcular Consumos
             </a>
         </div>
+
 
         <div class="table-responsive">
             <table class="table table-striped table-bordered shadow-sm" id="listado_mediciones">
@@ -141,6 +142,7 @@
                         <th>Consumo</th>
                         <th>Fecha</th>
                         <th>Estado</th>
+                        <th>Periodo</th>
                         <th>Imagen</th>
                     </tr>
                 </thead>
@@ -163,6 +165,7 @@
                             <td class="{{ 'estado-' . str_replace(' ', '-', strtolower($medicion->estado)) }}">
                                 {{ $medicion->estado }}
                             </td>
+                            <td>{{ $medicion->periodo }}</td>
                             <td>
                                 @if (isset($medicion->imagenes[0]))
                                     <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
@@ -203,6 +206,37 @@
             </table>
         </div>
     </div>
+
+    <!-- Modal para seleccionar período -->
+    <div class="modal fade" id="periodoModal" tabindex="-1" aria-labelledby="periodoModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="periodoModalLabel">Seleccionar Período</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="periodoForm">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="periodo" class="form-label">Período</label>
+                            <select class="form-select" id="periodo" name="periodo" required>
+                                <option value="Periodo 1">Periodo 1 (21/12 al 20/02)</option>
+                                <option value="Periodo 3">Periodo 3 (21/02 al 20/04)</option>
+                                <option value="Periodo 5">Periodo 5 (21/04 al 20/06)</option>
+                                <option value="Periodo 7">Periodo 7 (21/06 al 20/08)</option>
+                                <option value="Periodo 9">Periodo 9 (21/08 al 20/10)</option>
+                                <option value="Periodo 11">Periodo 11 (21/10 al 20/12)</option>
+                            </select>
+                        </div>
+                        <div class="text-center">
+                            <button type="submit" class="btn btn-primary">Generar Reporte</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @push('scripts')
@@ -210,11 +244,60 @@
         $(document).ready(function() {
             let idiomaUrl = "{{ env('IDIOMA_DATATABLES_URL') }}";
 
-            // Configuración de DataTable para la tabla,
-            $('#listado_mediciones').DataTable({
-                "language": {
-                    "url": idiomaUrl
-                }
+            // Verifica si el DataTable ya está inicializado
+            if (!$.fn.DataTable.isDataTable('#listado_mediciones')) {
+                // Configuración de DataTable para la tabla
+                $('#listado_mediciones').DataTable({
+                    "language": {
+                        "url": idiomaUrl
+                    }
+                });
+            }
+
+            // Manejar el envío del formulario de período
+            $('#periodoForm').submit(function(event) {
+                event.preventDefault(); // Evita el comportamiento por defecto del formulario
+
+                let periodo = $('#periodo').val();
+                let url = `{{ route('api_exportar_mediciones') }}?periodo=${periodo}`;
+
+                // Mostrar mensaje de carga
+                Swal.fire({
+                    title: 'Generando reporte...',
+                    text: 'Por favor, espere.',
+                    allowOutsideClick: false,
+                    didOpen: () => {
+                        Swal.showLoading()
+                    }
+                });
+
+                // Redirige a la URL con el período seleccionado
+                $.ajax({
+                    url: url,
+                    type: 'GET',
+                    success: function(response) {
+                        Swal.close(); // Cierra el mensaje de carga
+                        window.location.href = url;
+                    },
+                    error: function(xhr) {
+                        Swal.close(); // Cierra el mensaje de carga
+                        if (xhr.status === 404) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'No se encontraron mediciones para el período especificado.',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Error',
+                                text: 'Hubo un problema al generar el reporte.',
+                                confirmButtonText: 'Aceptar'
+                            });
+                        }
+                    }
+                });
             });
         });
     </script>

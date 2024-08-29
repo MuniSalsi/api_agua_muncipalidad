@@ -48,7 +48,8 @@ class MedicionWebController extends Controller
                 'medicion' => $medicion->medicion,
                 'consumo' => $medicion->consumo,
                 'fecha' => $medicion->fecha,
-                'estado' => $medicion->obtenerEstado->tipo, // Obtener el nombre del estado
+                'estado' => $medicion->obtenerEstado->tipo,
+                'periodo' => $medicion->periodo,
                 'imagenes' => $urlsPublicas,
             ];
 

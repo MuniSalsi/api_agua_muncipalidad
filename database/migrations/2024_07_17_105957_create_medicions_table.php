@@ -17,6 +17,7 @@ class CreateMedicionsTable extends Migration
             $table->float('consumo')->nullable();
             $table->date('fecha');
             $table->unsignedBigInteger('estado_id');
+            $table->text('periodo');
             $table->timestamps();
         });
     }
