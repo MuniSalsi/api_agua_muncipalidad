@@ -194,6 +194,21 @@ class MedicionController extends Controller
             return response()->json(['error' => 'El parámetro "periodo" es requerido'], 400);
         }
 
+        // Obtener el año actual
+        $anioActual = Carbon::now()->format('Y');
+
+        // Extraer el número del período usando una expresión regular
+        preg_match('/Periodo (\d+)/', $periodo, $matches);
+
+        // Verifica si se encontró un número de periodo
+        if (isset($matches[1])) {
+            $numeroPeriodo = $matches[1];
+            // Formatear el periodo como YYYYPP
+            $codigoPeriodo = sprintf('%s%02d', $anioActual, $numeroPeriodo); // Ejemplo: 2024001
+        } else {
+            return response()->json(['error' => 'El parámetro "periodo" no es válido'], 400);
+        }
+
         // Define el formato de fecha para el archivo
         $fecha = Carbon::now()->format('Y-m-d-H_i');
         $filename = "Export_mediciones_$fecha.txt";
@@ -221,29 +236,51 @@ class MedicionController extends Controller
             // Calcula el valor de 'anomalia' basado en 'estado_id'
             $anomalia = '0000';
             switch ($medicion->estado_id) {
-                case 1:
-                    $anomalia = '0000';
+                case 1: // Borroso
+                    $anomalia = "0006"; // Anteriormente 'Sin Situación'
                     break;
-                case 2:
-                    $anomalia = '0001';
+                case 2: // Con Aire
+                    $anomalia = "0005"; // Anteriormente 'Sin Instalar'
                     break;
-                case 3:
-                    $anomalia = '0002';
+                case 3: // En Interior
+                    $anomalia = "0004"; // Anteriormente 'Tapado'
                     break;
-                case 4:
-                    $anomalia = '0003';
+                case 4: // Roto
+                    $anomalia = "0003"; // Anteriormente 'Roto'
                     break;
-                case 5:
-                    $anomalia = '0004';
+                case 5: // Sin Instalar
+                    $anomalia = "0001"; // Anteriormente 'En Interior'
                     break;
-                case 6:
-                    $anomalia = '0005';
+                case 6: // Sin Situación
+                    $anomalia = "0000"; // Anteriormente 'Con Aire'
                     break;
+                case 7: // Tapado
+                    $anomalia = "0002"; // Anteriormente 'Borroso'
+                    break;
+                    // case 1:
+                    //     $anomalia = '0000';
+                    //     break;
+                    // case 2:
+                    //     $anomalia = '0001';
+                    //     break;
+                    // case 3:
+                    //     $anomalia = '0002';
+                    //     break;
+                    // case 4:
+                    //     $anomalia = '0003';
+                    //     break;
+                    // case 5:
+                    //     $anomalia = '0004';
+                    //     break;
+                    // case 6:
+                    //     $anomalia = '0005';
+                    //     break;
             }
 
             // Formatea la fecha y hora
-            $fecha = Carbon::parse($medicion->created_at)->format('Y-m-d');
-            $hora = Carbon::parse($medicion->created_at)->format('H:i:s');
+            $fecha = Carbon::parse($medicion->created_at)->format('d/m/Y');
+            $hora = Carbon::parse($medicion->created_at)->format('Hi');
+            // $hora = Carbon::parse($medicion->created_at)->format('H:i:s');
             $tipo_servicio = 'Servicio de Agua';
 
             // Formatea los datos en el formato CSV
@@ -258,8 +295,8 @@ class MedicionController extends Controller
                 $anomalia,
                 $fecha,
                 $hora,
-                $periodo,
-                $tipo_servicio
+                $codigoPeriodo,
+                $tipo_servicio,
             );
 
             fwrite($file, $line);
