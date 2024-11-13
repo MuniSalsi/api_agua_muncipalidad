@@ -32,4 +32,11 @@ class Medicion extends Model
     {
         return $this->belongsTo(Estado::class, 'estado_id');
     }
+
+    // Accesor para obtener el nombre del estado directamente
+    public function getEstadoNombreAttribute()
+    {
+        // Si la relación obtenerEstado existe, devolvemos el nombre (tipo)
+        return $this->obtenerEstado ? $this->obtenerEstado->tipo : null;
+    }
 }
