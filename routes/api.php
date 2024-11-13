@@ -15,4 +15,6 @@ Route::prefix('mediciones')->group(function () {
     Route::get('/imagen/{nroCuenta}/{fecha}', [MedicionController::class, 'obtenerImagenPorCuentaYFecha'])->name('api.medidor_imagen');
     Route::get('/test', [MedicionController::class, 'cargarMediciones']);
     Route::get('/exportar', [MedicionController::class, 'exportarMediciones'])->name('api_exportar_mediciones');
+    Route::get('/anteriores/{nroCuenta}/{fecha}', [MedicionController::class, 'getLecturaAnterior'])->name('api_getLecturaAnterior');
+    Route::get('/anteriores/{fecha}', [MedicionController::class, 'getLecturasAnteriores'])->name('api_getLecturasAnteriores');
 });
