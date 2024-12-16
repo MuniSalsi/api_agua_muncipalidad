@@ -229,6 +229,21 @@
                                 <option value="Periodo 11">Periodo 11 (21/10 al 20/12)</option>
                             </select>
                         </div>
+                        <div class="mb-3">
+                            <label for="anio" class="form-label">Año</label>
+                            <select class="form-select" id="anio" name="anio" required>
+                                <script>
+                                    // Generar dinámicamente los últimos 10 años y los próximos 10 años
+                                    const currentYear = new Date().getFullYear();
+                                    let options = '';
+                                    for (let year = currentYear + 10; year >= currentYear - 10; year--) {
+                                        const selected = year === currentYear ? 'selected' : '';
+                                        options += `<option value="${year.toString().slice(-2)}" ${selected}>${year}</option>`;
+                                    }
+                                    document.write(options);
+                                </script>
+                            </select>
+                        </div>
                         <div class="text-center">
                             <button type="submit" class="btn btn-primary">Generar Reporte</button>
                         </div>
@@ -259,7 +274,10 @@
                 event.preventDefault(); // Evita el comportamiento por defecto del formulario
 
                 let periodo = $('#periodo').val();
-                let url = `{{ route('api_exportar_mediciones') }}?periodo=${periodo}`;
+                let anio = $('#anio').val();
+                let periodoAnio = `${periodo} - ${anio}`;
+                let url =
+                    `{{ route('api_exportar_mediciones') }}?periodo=${encodeURIComponent(periodoAnio)}`;
 
                 // Mostrar mensaje de carga
                 Swal.fire({
@@ -271,7 +289,7 @@
                     }
                 });
 
-                // Redirige a la URL con el período seleccionado
+                // Redirige a la URL con el período y año seleccionado
                 $.ajax({
                     url: url,
                     type: 'GET',
@@ -299,6 +317,52 @@
                     }
                 });
             });
+
+            // // Manejar el envío del formulario de período
+            // $('#periodoForm').submit(function(event) {
+            //     event.preventDefault(); // Evita el comportamiento por defecto del formulario
+
+            //     let periodo = $('#periodo').val();
+            //     let url = `{{ route('api_exportar_mediciones') }}?periodo=${periodo}`;
+
+            //     // Mostrar mensaje de carga
+            //     Swal.fire({
+            //         title: 'Generando reporte...',
+            //         text: 'Por favor, espere.',
+            //         allowOutsideClick: false,
+            //         didOpen: () => {
+            //             Swal.showLoading()
+            //         }
+            //     });
+
+            //     // Redirige a la URL con el período seleccionado
+            //     $.ajax({
+            //         url: url,
+            //         type: 'GET',
+            //         success: function(response) {
+            //             Swal.close(); // Cierra el mensaje de carga
+            //             window.location.href = url;
+            //         },
+            //         error: function(xhr) {
+            //             Swal.close(); // Cierra el mensaje de carga
+            //             if (xhr.status === 404) {
+            //                 Swal.fire({
+            //                     icon: 'error',
+            //                     title: 'Error',
+            //                     text: 'No se encontraron mediciones para el período especificado.',
+            //                     confirmButtonText: 'Aceptar'
+            //                 });
+            //             } else {
+            //                 Swal.fire({
+            //                     icon: 'error',
+            //                     title: 'Error',
+            //                     text: 'Hubo un problema al generar el reporte.',
+            //                     confirmButtonText: 'Aceptar'
+            //                 });
+            //             }
+            //         }
+            //     });
+            // });
         });
     </script>
 @endpush
