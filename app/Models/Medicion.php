@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Medicion extends Model
 {
@@ -38,5 +39,10 @@ class Medicion extends Model
     {
         // Si la relación obtenerEstado existe, devolvemos el nombre (tipo)
         return $this->obtenerEstado ? $this->obtenerEstado->tipo : null;
+    }
+
+    public function fotoMedicion(): HasOne
+    {
+        return $this->hasOne(FotoMedicion::class, 'medicion_id');
     }
 }

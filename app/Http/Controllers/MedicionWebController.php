@@ -11,7 +11,7 @@ class MedicionWebController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Medicion::with('obtenerEstado'); // Asegúrate de cargar la relación 'obtenerEstado'
+        $query = Medicion::with(['obtenerEstado', 'fotoMedicion']); // Asegúrate de cargar la relación 'obtenerEstado'
 
         // Configuración para DataTables
         $start = $request->input('start', 0); // Inicio de la paginación
@@ -37,10 +37,10 @@ class MedicionWebController extends Controller
             // Verifica si el directorio existe
             $archivos = Storage::exists($rutaDirectorio) ? Storage::files($rutaDirectorio) : [];
 
-            // Genera las URLs de todas las imágenes encontradas en el directorio
-            $imagenes = array_map(function ($archivo) {
-                return Storage::url($archivo); // Genera la URL pública de la imagen
-            }, $archivos);
+            // // Genera las URLs de todas las imágenes encontradas en el directorio
+            // $imagenes = array_map(function ($archivo) {
+            //     return Storage::url($archivo); // Genera la URL pública de la imagen
+            // }, $archivos);
 
             // Formateamos la fecha en dd/mm/yyyy
             $fechaFormateada = $medicion->fecha ? \Carbon\Carbon::parse($medicion->fecha)->format('d/m/Y') : '';
@@ -53,12 +53,24 @@ class MedicionWebController extends Controller
                 $medicion->orden,
                 $medicion->medicion,
                 $medicion->consumo ? $medicion->consumo : '<span class="text-danger">Pendiente de calcular</span>',
-                $fechaFormateada,  // Usamos la fecha formateada
-                // Aquí accedemos al nombre del estado con la relación 'obtenerEstado'
+                $fechaFormateada,
                 $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : 'Estado no disponible', // Cambié nombre_estado a tipo
                 $medicion->periodo,
-                count($imagenes) > 0 ? $imagenes : []  // Solo pasamos las URLs de las imágenes, si existen
+                $medicion->fotoMedicion->url_foto
             ];
+            // return [
+            //     $medicion->id,
+            //     $medicion->nro_cuenta,
+            //     $medicion->ruta,
+            //     $medicion->orden,
+            //     $medicion->medicion,
+            //     $medicion->consumo ? $medicion->consumo : '<span class="text-danger">Pendiente de calcular</span>',
+            //     $fechaFormateada,  // Usamos la fecha formateada
+            //     // Aquí accedemos al nombre del estado con la relación 'obtenerEstado'
+            //     $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : 'Estado no disponible', // Cambié nombre_estado a tipo
+            //     $medicion->periodo,
+            //     count($imagenes) > 0 ? $imagenes : []  // Solo pasamos las URLs de las imágenes, si existen
+            // ];
         });
 
         return response()->json([
