@@ -25,7 +25,8 @@ class Medicion extends Model
         'fecha',
         'periodo',
         'foto_medidor',
-        'estado_id'
+        'estado_id',
+        'codigo_medidor',
     ];
 
     // Define la relación con el modelo Estado

@@ -56,8 +56,9 @@ class MedicionWebController extends Controller
                 $fechaFormateada,
                 $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : 'Estado no disponible', // Cambié nombre_estado a tipo
                 $medicion->periodo,
-                $medicion->fotoMedicion->url_foto
+                $medicion->fotoMedicion && $medicion->fotoMedicion->url_foto ? $medicion->fotoMedicion->url_foto : 'Sin Imagen'
             ];
+
             // return [
             //     $medicion->id,
             //     $medicion->nro_cuenta,
