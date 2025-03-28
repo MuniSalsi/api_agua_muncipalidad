@@ -208,6 +208,7 @@
 
         .btn-info {
             background-color: var(--info-color);
+            color: white;
         }
 
         .btn-secondary {
@@ -325,8 +326,47 @@
             font-style: italic;
         }
 
+        .div-img-container {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            /* Centra verticalmente las imágenes */
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            /* Permite que los elementos se ajusten en pantallas pequeñas */
+            gap: 20px;
+            /* Espacio entre imágenes */
+        }
+
+        .div-img-container img {
+            max-width: 100%;
+            /* Asegura que las imágenes no excedan el ancho del contenedor */
+            height: auto;
+            /* Mantiene la proporción de aspecto */
+            max-height: 180px;
+            /* Altura máxima para pantallas grandes */
+            object-fit: contain;
+            /* Asegura que la imagen completa sea visible */
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
+            .logo-container {
+                width: 90%;
+            }
+
+            .div-img-container {
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .div-img-container img {
+                max-height: 120px;
+                /* Altura máxima reducida para móviles */
+                width: auto;
+                /* Ancho automático basado en la proporción */
+            }
+
             .btn-container {
                 flex-direction: column;
                 gap: 10px;
@@ -352,6 +392,23 @@
                 font-size: 0.9rem;
             }
         }
+
+        @media (max-width: 480px) {
+            .div-img-container img {
+                max-height: 90px;
+                /* Altura aún más pequeña para pantallas muy pequeñas */
+            }
+
+            .logo-container h2 {
+                font-size: 1.5rem;
+                /* Reduce el tamaño del título principal */
+            }
+
+            .logo-container h4 {
+                font-size: 1rem;
+                /* Reduce el tamaño del subtítulo */
+            }
+        }
     </style>
 @endpush
 
@@ -359,7 +416,11 @@
     <div class="container-fluid mt-4">
         <!-- Título y Logo -->
         <div class="logo-container">
-            <img src="{{ asset('img/logo/logo_municipalidad_salsipuedes.png') }}" alt="Logo Municipalidad Salsipuedes">
+            <div class="div-img-container">
+                <img src="{{ asset('img/logo/logo_municipalidad_salsipuedes.png') }}" alt="Logo Municipalidad Salsipuedes">
+                <img src="{{ asset('img/logo/logo-agua.svg') }}" alt="Logo app agua">
+            </div>
+
             <h2 class="text-dark mb-0">Dirección de Agua</h2>
             <h4 class="text-muted">Municipalidad de Salsipuedes</h4>
         </div>
