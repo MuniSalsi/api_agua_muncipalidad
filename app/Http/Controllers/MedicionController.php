@@ -65,14 +65,88 @@ class MedicionController extends Controller
 
     public function index2()
     {
-        $listadoMediciones = Medicion::with(['fotoMedicion'])->get();
+        try {
+            // Validar parámetros de paginación (opcional)
+            $perPage = request()->input('per_page', 10);
+            if (!is_numeric($perPage) || $perPage < 1 || $perPage > 100) {
+                return response()->json([
+                    'error' => 'El parámetro per_page debe ser un número entre 1 y 100'
+                ], 400);
+            }
 
-        if ($listadoMediciones->isEmpty()) {
-            return response()->json(['error' => 'No se cargaron mediciones'], 404);
+            // Consulta optimizada con selección de columnas específicas
+            $listadoMediciones = Medicion::with([
+                'fotoMedicion',
+                'obtenerEstado'
+            ])->paginate($perPage);
+
+            if ($listadoMediciones->isEmpty()) {
+                return response()->json([
+                    'message' => 'No se encontraron mediciones',
+                    'data' => []
+                ], 200);
+            }
+
+            // Modificar los datos para la estructura deseada
+            $data = $listadoMediciones->map(function ($medicion) {
+                return [
+                    'id' => $medicion->id,
+                    'nro_cuenta' => $medicion->nro_cuenta,
+                    'ruta' => $medicion->ruta,
+                    'orden' => $medicion->orden,
+                    'medicion' => $medicion->medicion,
+                    'fecha' => $medicion->fecha,
+                    'periodo' => $medicion->periodo,
+                    'codigo_medidor' => $medicion->codigo_medidor,
+                    'url_foto' => $medicion->fotoMedicion ? $medicion->fotoMedicion->url_foto : null,
+                    'estado' => $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : null,
+                ];
+            });
+
+            // Respuesta estructurada con paginación
+            return response()->json([
+                'current_page' => $listadoMediciones->currentPage(),
+                'data' => $data,
+                'first_page_url' => $listadoMediciones->url(1),
+                'from' => $listadoMediciones->firstItem(),
+                'last_page' => $listadoMediciones->lastPage(),
+                'last_page_url' => $listadoMediciones->url($listadoMediciones->lastPage()),
+                'links' => [
+                    [
+                        'url' => $listadoMediciones->previousPageUrl(),
+                        'label' => '&laquo; Previous',
+                        'active' => false
+                    ],
+                    [
+                        'url' => $listadoMediciones->url($listadoMediciones->currentPage()),
+                        'label' => (string) $listadoMediciones->currentPage(),
+                        'active' => true
+                    ],
+                    [
+                        'url' => $listadoMediciones->nextPageUrl(),
+                        'label' => 'Next &raquo;',
+                        'active' => false
+                    ]
+                ],
+                'next_page_url' => $listadoMediciones->nextPageUrl(),
+                'path' => $listadoMediciones->path(),
+                'per_page' => $listadoMediciones->perPage(),
+                'prev_page_url' => $listadoMediciones->previousPageUrl(),
+                'to' => $listadoMediciones->lastItem(),
+                'total' => $listadoMediciones->total(),
+            ]);
+        } catch (\Exception $e) {
+            // Log del error (opcional)
+            Log::error('Error en index2: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'error' => 'Ocurrió un error al procesar la solicitud',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
         }
-
-        return response()->json($listadoMediciones);
     }
+
 
     public function store(Request $request)
     {
@@ -586,51 +660,72 @@ class MedicionController extends Controller
         $mediciones = json_decode($request->mediciones, true);
         $fotos = $request->file('fotos'); // Array de fotos
 
-        Log::info('MEDICIONES: ', $mediciones);
+        // Validamos si se recibieron mediciones y fotos
+        if (!$mediciones || !is_array($mediciones)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'No se recibieron mediciones válidas.',
+            ], 400); // Error 400 - Bad Request
+        }
 
         // Procesamos las mediciones en lotes de 20
-        foreach (array_chunk($mediciones, 20) as $lote) {
-            foreach ($lote as $index => $medicion) {
-                $fecha = isset($medicion['fecha']) ? $medicion['fecha'] : null;
-                $periodo = $fecha ? $this->getPeriodo($fecha) : 'Desconocido';  // Usamos la fecha directamente
+        try {
+            foreach (array_chunk($mediciones, 20) as $lote) {
+                foreach ($lote as $index => $medicion) {
+                    $fecha = isset($medicion['fecha']) ? $medicion['fecha'] : null;
+                    $periodo = $fecha ? $this->getPeriodo($fecha) : 'Desconocido';  // Usamos la fecha directamente
 
-                $nuevaMedicion = Medicion::create([
-                    'nro_cuenta' => $medicion['nroCuenta'],
-                    'ruta' => $medicion['ruta'],
-                    'orden' => $medicion['orden'],
-                    'medicion' => $medicion['medicion'],
-                    'fecha' => $fecha,
-                    'estado_id' => $medicion['estadoId'],
-                    'periodo' => $periodo,
-                    'codigo_medidor' => $medicion['codigoMedidor'],
-                ]);
+                    // Creamos la medición
+                    $nuevaMedicion = Medicion::create([
+                        'nro_cuenta' => $medicion['nroCuenta'],
+                        'ruta' => $medicion['ruta'],
+                        'orden' => $medicion['orden'],
+                        'medicion' => $medicion['medicion'],
+                        'fecha' => $fecha,
+                        'estado_id' => $medicion['estadoId'],
+                        'periodo' => $periodo,
+                        'codigo_medidor' => $medicion['codigoMedidor'],
+                    ]);
 
-                // Verificamos si hay foto para la medición
-                if (isset($fotos[$index])) {
-                    try {
-                        $nroCuenta = $medicion['nroCuenta'];
-                        $nombreFoto = $fotos[$index]->getClientOriginalName();
-                        $rutaDestino = "mediciones/{$nroCuenta}/{$nombreFoto}";
+                    // Verificamos si hay foto para la medición
+                    if (isset($fotos[$index])) {
+                        try {
+                            $nroCuenta = $medicion['nroCuenta'];
+                            $nombreFoto = $fotos[$index]->getClientOriginalName();
+                            $rutaDestino = "mediciones/{$nroCuenta}/{$nombreFoto}";
 
-                        // Guardamos la foto
-                        $fotos[$index]->storeAs('public', $rutaDestino);
+                            // Guardamos la foto
+                            $fotos[$index]->storeAs('public', $rutaDestino);
 
-                        // Guardamos la URL de la foto en la tabla fotos_mediciones
-                        FotoMedicion::create([
-                            'url_foto' => "storage/$rutaDestino",
-                            'medicion_id' => $nuevaMedicion->id,
-                        ]);
-                    } catch (\Exception $e) {
-                        Log::error('Error al subir la foto: ' . $e->getMessage());
+                            // Guardamos la URL de la foto en la tabla fotos_mediciones
+                            FotoMedicion::create([
+                                'url_foto' => "storage/$rutaDestino",
+                                'medicion_id' => $nuevaMedicion->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Error al subir la foto: ' . $e->getMessage());
+                            return response()->json([
+                                'error' => true,
+                                'message' => 'Error al subir la foto para la medición con N° de cuenta ' . $medicion['nroCuenta'],
+                            ], 500); // Error 500 - Internal Server Error
+                        }
                     }
                 }
             }
-        }
 
-        return response()->json([
-            'error' => false,
-            'message' => 'Mediciones subidas correctamente',
-        ]);
+            // Respuesta exitosa
+            return response()->json([
+                'error' => false,
+                'message' => 'Mediciones subidas correctamente.',
+            ], 200); // Éxito
+        } catch (\Exception $e) {
+            // Captura cualquier otro error general
+            Log::error('Error al procesar las mediciones: ' . $e->getMessage());
+            return response()->json([
+                'error' => true,
+                'message' => 'Hubo un error al procesar las mediciones. Por favor, intente nuevamente.',
+            ], 500); // Error 500 - Internal Server Error
+        }
     }
 }
 
