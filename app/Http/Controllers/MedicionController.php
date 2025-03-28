@@ -66,28 +66,48 @@ class MedicionController extends Controller
     public function index2()
     {
         try {
-            // Validar parámetros de paginación (opcional)
+            // Validar parámetros
             $perPage = request()->input('per_page', 10);
+            $searchTerm = request()->input('search');
+            $fecha = request()->input('date');
+            $estadoId = request()->input('estado');
+
             if (!is_numeric($perPage) || $perPage < 1 || $perPage > 100) {
                 return response()->json([
                     'error' => 'El parámetro per_page debe ser un número entre 1 y 100'
                 ], 400);
             }
 
-            // Consulta optimizada con selección de columnas específicas
-            $listadoMediciones = Medicion::with([
-                'fotoMedicion',
-                'obtenerEstado'
-            ])->paginate($perPage);
+            // Consulta base con relaciones
+            $query = Medicion::with(['fotoMedicion', 'obtenerEstado']);
 
-            if ($listadoMediciones->isEmpty()) {
-                return response()->json([
-                    'message' => 'No se encontraron mediciones',
-                    'data' => []
-                ], 200);
+            // Aplicar filtro de búsqueda si existe
+            if ($searchTerm) {
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('nro_cuenta', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('ruta', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('orden', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('medicion', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('codigo_medidor', 'LIKE', "%{$searchTerm}%");
+                });
             }
 
-            // Modificar los datos para la estructura deseada
+            // Filtro por fecha
+            if ($fecha) {
+                $query->whereDate('fecha', $fecha);
+            }
+
+            // Filtro por estado
+            if ($estadoId) {
+                $query->whereHas('obtenerEstado', function ($q) use ($estadoId) {
+                    $q->where('id', $estadoId);
+                });
+            }
+
+            // Paginar resultados
+            $listadoMediciones = $query->orderBy('id', 'desc')->paginate($perPage);
+
+            // Transformar datos
             $data = $listadoMediciones->map(function ($medicion) {
                 return [
                     'id' => $medicion->id,
@@ -103,7 +123,6 @@ class MedicionController extends Controller
                 ];
             });
 
-            // Respuesta estructurada con paginación
             return response()->json([
                 'current_page' => $listadoMediciones->currentPage(),
                 'data' => $data,
@@ -111,23 +130,7 @@ class MedicionController extends Controller
                 'from' => $listadoMediciones->firstItem(),
                 'last_page' => $listadoMediciones->lastPage(),
                 'last_page_url' => $listadoMediciones->url($listadoMediciones->lastPage()),
-                'links' => [
-                    [
-                        'url' => $listadoMediciones->previousPageUrl(),
-                        'label' => '&laquo; Previous',
-                        'active' => false
-                    ],
-                    [
-                        'url' => $listadoMediciones->url($listadoMediciones->currentPage()),
-                        'label' => (string) $listadoMediciones->currentPage(),
-                        'active' => true
-                    ],
-                    [
-                        'url' => $listadoMediciones->nextPageUrl(),
-                        'label' => 'Next &raquo;',
-                        'active' => false
-                    ]
-                ],
+                'links' => $listadoMediciones->linkCollection()->toArray(),
                 'next_page_url' => $listadoMediciones->nextPageUrl(),
                 'path' => $listadoMediciones->path(),
                 'per_page' => $listadoMediciones->perPage(),
@@ -136,9 +139,7 @@ class MedicionController extends Controller
                 'total' => $listadoMediciones->total(),
             ]);
         } catch (\Exception $e) {
-            // Log del error (opcional)
-            Log::error('Error en index2: ' . $e->getMessage());
-
+            Log::error('Error en MedicionController@index2: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'Ocurrió un error al procesar la solicitud',
@@ -146,7 +147,6 @@ class MedicionController extends Controller
             ], 500);
         }
     }
-
 
     public function store(Request $request)
     {
@@ -283,14 +283,21 @@ class MedicionController extends Controller
         // Obtener el año actual
         $anioActual = Carbon::now()->format('Y');
 
-        // Extraer el número del período usando una expresión regular
-        preg_match('/Periodo (\d+)/', $periodo, $matches);
+        // Extraer el número del período y el año utilizando una expresión regular
+        preg_match('/Periodo (\d+) - (\d+)/', $periodo, $matches);
 
         // Verifica si se encontró un número de periodo
-        if (isset($matches[1])) {
-            $numeroPeriodo = $matches[1];
-            // Formatear el periodo como YYYYPP
-            $codigoPeriodo = sprintf('%s%03d', $anioActual, $numeroPeriodo); // Ejemplo: 2024001
+        if (isset($matches[1]) && isset($matches[2])) {
+            $numeroPeriodo = $matches[1]; // El número del período
+            $anioPeriodo = $matches[2];   // El año del periodo
+
+            // Ajusta el año si es solo un valor de 2 dígitos
+            if (strlen($anioPeriodo) == 2) {
+                $anioPeriodo = '20' . $anioPeriodo;  // Agrega '20' para convertir en un año completo (ejemplo: '25' -> '2025')
+            }
+
+            // Genera el código del período con el año completo
+            $codigoPeriodo = sprintf('Periodo %d - %s', $numeroPeriodo, $anioPeriodo); // Formato: "Periodo 3 - 2025"
         } else {
             return response()->json(['error' => 'El parámetro "periodo" no es válido'], 400);
         }
@@ -300,10 +307,10 @@ class MedicionController extends Controller
         $filename = "Export_mediciones_$fecha.txt";
         $filePath = storage_path("app/public/$filename");
 
-        // Consulta los datos filtrados por el período
+        // Consulta los datos filtrados por el período completo (con año)
         $mediciones = DB::table('mediciones')
             ->select('ruta', 'orden', 'nro_cuenta', 'medicion', 'fecha', 'estado_id', 'created_at')
-            ->where('periodo', $periodo)
+            ->where('periodo', $codigoPeriodo)  // Usar el periodo con año completo
             ->get();
 
         // Verifica si se encontraron mediciones
@@ -343,30 +350,11 @@ class MedicionController extends Controller
                 case 7: // Tapado
                     $anomalia = "0002"; // Anteriormente 'Borroso'
                     break;
-                    // case 1:
-                    //     $anomalia = '0000';
-                    //     break;
-                    // case 2:
-                    //     $anomalia = '0001';
-                    //     break;
-                    // case 3:
-                    //     $anomalia = '0002';
-                    //     break;
-                    // case 4:
-                    //     $anomalia = '0003';
-                    //     break;
-                    // case 5:
-                    //     $anomalia = '0004';
-                    //     break;
-                    // case 6:
-                    //     $anomalia = '0005';
-                    //     break;
             }
 
             // Formatea la fecha y hora
             $fecha = Carbon::parse($medicion->created_at)->format('d/m/Y');
             $hora = Carbon::parse($medicion->created_at)->format('Hi');
-            // $hora = Carbon::parse($medicion->created_at)->format('H:i:s');
             $tipo_servicio = 'Servicio de Agua';
 
             // Formatea los datos en el formato CSV
@@ -381,8 +369,8 @@ class MedicionController extends Controller
                 $anomalia,
                 $fecha,
                 $hora,
-                $codigoPeriodo,
-                $tipo_servicio,
+                $codigoPeriodo, // El periodo completo con el año
+                $tipo_servicio
             );
 
             fwrite($file, $line);
@@ -393,6 +381,7 @@ class MedicionController extends Controller
         // Retorna la respuesta de descarga del archivo
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
+
 
     public function upload(Request $request)
     {
