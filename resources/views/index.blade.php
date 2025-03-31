@@ -361,6 +361,61 @@
             color: #495057;
         }
 
+        /* Estilos para el selector de items por página */
+        #perPage {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%232c3e50' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.75rem center;
+            background-size: 16px 12px;
+            padding-right: 2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #ced4da;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        #perPage:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+            outline: none;
+        }
+
+        /* Estilo para la opción "Todos" */
+        #perPage option[value="all"] {
+            font-weight: 600;
+            color: var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
+        }
+
+        /* Contenedor del selector con ícono */
+        .per-page-container {
+            position: relative;
+        }
+
+        .per-page-container::before {
+            content: "\f123";
+            font-family: "bootstrap-icons";
+            position: absolute;
+            right: 10px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--primary-color);
+        }
+
+        /* Estilo para el mensaje cuando se selecciona "Todos" */
+        .pagination-info {
+            background-color: rgba(52, 152, 219, 0.1);
+            border-radius: 5px;
+            padding: 10px 15px;
+            color: var(--primary-color);
+            font-weight: 500;
+            border-left: 3px solid var(--secondary-color);
+        }
+
         /* Responsive */
         @media (max-width: 768px) {
             .logo-container {
@@ -409,6 +464,10 @@
             }
 
             .filters>div>div {
+                width: 100% !important;
+            }
+
+            #perPage {
                 width: 100% !important;
             }
         }
@@ -469,6 +528,17 @@
         <!-- Filtros -->
         <div class="filters mb-4">
             <div class="d-flex align-items-end justify-content-center flex-wrap gap-3">
+                <!-- Items por página -->
+                <div style="width: 180px">
+                    <label for="perPage" class="form-label small mb-1">Items por página</label>
+                    <select name="per_page" id="perPage" class="form-select form-select-sm">
+                        <option value="10">10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                        <option value="all">Todos</option>
+                    </select>
+                </div>
                 <!-- Fecha - Más compacto -->
                 <div style="width: 180px">
                     <label for="date" class="form-label small mb-1">Fecha</label>
@@ -609,6 +679,307 @@
 @endsection
 
 @push('scripts')
+    <script>
+        // Mover loadMedicionesData al ámbito global
+        let loadMedicionesData;
+
+        // Funciones globales que necesitan ser accesibles
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const fecha = document.getElementById('date').value;
+            const estadoId = document.getElementById('estado').value;
+            loadMedicionesData(1, searchTerm, fecha, estadoId);
+        }
+
+        function handlePaginationClick(page, event, searchTerm, fecha, estadoId) {
+            if (event) event.preventDefault();
+            loadMedicionesData(page, searchTerm, fecha, estadoId);
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function showImageModal(imageUrl) {
+            const modalImagen = document.getElementById('modalImagen');
+            modalImagen.src = imageUrl;
+            const imagenModal = new bootstrap.Modal(document.getElementById('imagenModal'));
+            imagenModal.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del DOM
+            const searchInput = document.getElementById('searchInput');
+            const dateFilter = document.getElementById('date');
+            const estadoFilter = document.getElementById('estado');
+            const perPageFilter = document.getElementById('perPage');
+            let searchTimeout;
+
+            // Event listeners
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(performSearch, 300);
+            });
+
+            dateFilter.addEventListener('change', performSearch);
+            estadoFilter.addEventListener('change', performSearch);
+            perPageFilter.addEventListener('change', performSearch);
+
+            // Definición de loadMedicionesData (ahora accesible globalmente)
+            loadMedicionesData = async function(page = 1, searchTerm = '', fecha = '', estadoId = '') {
+                try {
+                    toggleLoading(true);
+
+                    let url = new URL(`{{ route('api.mediciones_index2') }}`);
+                    url.searchParams.append('page', page);
+
+                    // Agregar parámetro per_page
+                    const perPage = document.getElementById('perPage').value;
+                    url.searchParams.append('per_page', perPage);
+
+                    if (searchTerm) url.searchParams.append('search', searchTerm);
+                    if (fecha) url.searchParams.append('date', fecha);
+                    if (estadoId) url.searchParams.append('estado', estadoId);
+
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Error en la respuesta del servidor');
+
+                    const data = await response.json();
+                    updateTable(data.data);
+                    updatePagination(data, searchTerm, fecha, estadoId);
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('Error al cargar datos. Intente nuevamente.');
+                } finally {
+                    toggleLoading(false);
+                }
+            };
+
+            const updateTable = (mediciones) => {
+                const tbody = document.querySelector('#medicionesTable tbody');
+                tbody.innerHTML = '';
+
+                if (!mediciones || mediciones.length === 0) {
+                    tbody.innerHTML =
+                        `<tr><td colspan="9" class="text-center py-4">No se encontraron mediciones</td></tr>`;
+                    return;
+                }
+
+                mediciones.forEach(medicion => {
+                    const estadoClass = getEstadoClass(medicion.estado);
+                    const imagenCell = medicion.url_foto ?
+                        `<button class="btn btn-info btn-sm" onclick="showImageModal('${medicion.url_foto}')">Ver Imagen</button>` :
+                        '<span class="no-image">Sin imagen</span>';
+
+                    const row = `
+                    <tr>
+                        <td>${medicion.id}</td>
+                        <td>${medicion.nro_cuenta}</td>
+                        <td>${medicion.ruta}</td>
+                        <td>${medicion.orden}</td>
+                        <td>${medicion.medicion}</td>
+                        <td>${medicion.fecha}</td>
+                        <td class="${estadoClass}">${medicion.estado}</td>
+                        <td>${medicion.periodo}</td>
+                        <td>${imagenCell}</td>
+                    </tr>
+                `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            };
+
+            function getEstadoClass(estado) {
+                const clases = {
+                    'Borroso': 'estado-borroso',
+                    'Con Aire': 'estado-con-aire',
+                    'En Interior': 'estado-en-interior',
+                    'Roto': 'estado-roto',
+                    'Sin Instalar': 'estado-sin-instalar',
+                    'Sin Situacion': 'estado-sin-situacion',
+                    'Tapado': 'estado-tapado'
+                };
+                return clases[estado] || '';
+            }
+
+            const updatePagination = (data, searchTerm, fecha, estadoId) => {
+                const pagination = document.getElementById('pagination');
+                if (!pagination) return;
+
+                pagination.innerHTML = '';
+
+                // Si per_page es "all", mostrar mensaje en lugar de paginación
+                const perPage = document.getElementById('perPage').value;
+                if (perPage === 'all') {
+                    const info = document.createElement('div');
+                    info.className = 'text-center text-muted small';
+                    info.textContent = `Mostrando ${data.total} resultados`;
+                    pagination.appendChild(info);
+                    return;
+                }
+
+                const {
+                    current_page,
+                    last_page
+                } = data;
+
+                if (current_page > 1) {
+                    pagination.appendChild(createPageItem(
+                        '&laquo; Anterior',
+                        current_page - 1,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        false,
+                        'Previous'
+                    ));
+                }
+
+                const start = Math.max(1, current_page - 2);
+                const end = Math.min(last_page, current_page + 2);
+
+                if (start > 1) {
+                    pagination.appendChild(createPageItem(1, 1, searchTerm, fecha, estadoId));
+                    if (start > 2) {
+                        pagination.appendChild(createEllipsis());
+                    }
+                }
+
+                for (let i = start; i <= end; i++) {
+                    pagination.appendChild(createPageItem(
+                        i,
+                        i,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        i === current_page
+                    ));
+                }
+
+                if (end < last_page) {
+                    if (end < last_page - 1) {
+                        pagination.appendChild(createEllipsis());
+                    }
+                    pagination.appendChild(createPageItem(last_page, last_page, searchTerm, fecha, estadoId));
+                }
+
+                if (current_page < last_page) {
+                    pagination.appendChild(createPageItem(
+                        'Siguiente &raquo;',
+                        current_page + 1,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        false,
+                        'Next'
+                    ));
+                }
+            };
+
+            function createPageItem(text, page, searchTerm, fecha, estadoId, isActive = false, ariaLabel = null) {
+                const li = document.createElement('li');
+                li.className = `page-item ${isActive ? 'active' : ''}`;
+
+                const a = document.createElement('a');
+                a.className = 'page-link';
+                a.href = '#';
+                a.innerHTML = text;
+                if (ariaLabel) a.setAttribute('aria-label', ariaLabel);
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    loadMedicionesData(page, searchTerm, fecha, estadoId);
+                };
+
+                li.appendChild(a);
+                return li;
+            }
+
+            function createEllipsis() {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">...</span>';
+                return li;
+            }
+
+            function toggleLoading(show) {
+                const spinner = document.getElementById('loadingSpinner');
+                if (spinner) spinner.style.display = show ? 'block' : 'none';
+            }
+
+            function showError(message) {
+                const errorAlert = document.getElementById('errorAlert');
+                if (errorAlert) {
+                    errorAlert.textContent = message;
+                    errorAlert.style.display = 'block';
+                    setTimeout(() => errorAlert.style.display = 'none', 5000);
+                }
+            }
+
+            document.getElementById('resetFilters')?.addEventListener('click', () => {
+                searchInput.value = '';
+                dateFilter.value = '';
+                estadoFilter.value = '';
+                document.getElementById('perPage').value = '10';
+                loadMedicionesData(1);
+            });
+
+            // Carga inicial
+            loadMedicionesData(1);
+        });
+
+        $('#periodoForm').submit(function(event) {
+            event.preventDefault(); // Evita el comportamiento por defecto del formulario
+            let periodo = $('#periodo').val();
+            let anio = $('#anio').val();
+            let periodoAnio = `${periodo} - ${anio}`;
+
+            // Definir correctamente la URL
+            let url =
+                `{{ route('api_exportar_mediciones') }}?periodo=${encodeURIComponent(periodoAnio)}`;
+
+            // Mostrar mensaje de carga
+            Swal.fire({
+                title: 'Generando reporte...',
+                text: 'Por favor, espere.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            // Realizar la petición AJAX
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    console.log(response);
+                    Swal.close(); // Cierra el mensaje de carga
+                    window.location.href = url; // Redirige al usuario al reporte generado
+                },
+                error: function(xhr) {
+                    console.log(xhr);
+                    Swal.close(); // Cierra el mensaje de carga
+                    if (xhr.status === 404) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se encontraron mediciones para el período especificado.',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Hubo un problema al generar el reporte.',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+@endpush
+
+{{-- @push('scripts')
     <script>
         // Mover loadMedicionesData al ámbito global
         let loadMedicionesData;
@@ -888,179 +1259,6 @@
                     }
                 }
             });
-        });
-    </script>
-@endpush
-
-{{-- @push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const searchInput = document.getElementById('searchInput');
-            let searchTimeout;
-
-            // Evento para búsqueda en tiempo real con debounce
-            searchInput.addEventListener('input', function() {
-                clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(() => {
-                    performSearch();
-                }, 300); // 300ms de delay para evitar muchas peticiones
-            });
-
-            const performSearch = () => {
-                const searchTerm = searchInput.value.trim();
-                loadMedicionesData(1, searchTerm);
-            };
-
-            // Función para cargar los datos de las mediciones
-            const loadMedicionesData = async (page = 1, searchTerm = '') => {
-                try {
-                    const response = await fetch(
-                        `{{ route('api.mediciones_index2') }}?page=${page}&search=${encodeURIComponent(searchTerm)}`
-                    );
-                    const data = await response.json();
-
-                    // Actualizar la tabla con los datos recibidos
-                    updateTable(data.data);
-
-                    // Actualizar la paginación
-                    updatePagination(data);
-                } catch (error) {
-                    console.error('Error al cargar los datos:', error);
-                }
-            };
-
-            // Función para actualizar la tabla con los datos
-            const updateTable = (mediciones) => {
-                const tbody = document.querySelector('#medicionesTable tbody');
-                tbody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
-
-                if (mediciones.length === 0) {
-                    tbody.innerHTML = `
-                        <tr>
-                            <td colspan="9" class="text-center py-4">No se encontraron mediciones</td>
-                        </tr>
-                    `;
-                    return;
-                }
-
-                mediciones.forEach(medicion => {
-                    const row = document.createElement('tr');
-
-                    // Determinar la clase de estado según el valor
-                    let estadoClass = '';
-                    switch (medicion.estado) {
-                        case 'Borroso':
-                            estadoClass = 'estado-borroso';
-                            break;
-                        case 'Con Aire':
-                            estadoClass = 'estado-con-aire';
-                            break;
-                        case 'En Interior':
-                            estadoClass = 'estado-en-interior';
-                            break;
-                        case 'Roto':
-                            estadoClass = 'estado-roto';
-                            break;
-                        case 'Sin Instalar':
-                            estadoClass = 'estado-sin-instalar';
-                            break;
-                        case 'Sin Situacion':
-                            estadoClass = 'estado-sin-situacion';
-                            break;
-                        case 'Tapado':
-                            estadoClass = 'estado-tapado';
-                            break;
-                        default:
-                            estadoClass = '';
-                    }
-
-                    // Crear el botón o mensaje para la imagen
-                    let imagenCell = '';
-                    if (medicion.url_foto) {
-                        imagenCell = `
-                            <button class="btn btn-info btn-sm"
-                                    onclick="showImageModal('${medicion.url_foto}')">
-                                Ver Imagen
-                            </button>
-                        `;
-                    } else {
-                        imagenCell = '<span class="no-image">Sin imagen</span>';
-                    }
-
-                    row.innerHTML = `
-                        <td>${medicion.id}</td>
-                        <td>${medicion.nro_cuenta}</td>
-                        <td>${medicion.ruta}</td>
-                        <td>${medicion.orden}</td>
-                        <td>${medicion.medicion}</td>
-                        <td>${medicion.fecha}</td>
-                        <td class="${estadoClass}">${medicion.estado}</td>
-                        <td>${medicion.periodo}</td>
-                        <td>${imagenCell}</td>
-                    `;
-                    tbody.appendChild(row);
-                });
-            };
-
-            // Y actualiza los onclick en la paginación para pasar el evento:
-            const updatePagination = (data) => {
-                const pagination = document.getElementById('pagination');
-                pagination.innerHTML = ''; // Limpiar la paginación anterior
-
-                const currentPage = data.current_page;
-                const lastPage = data.last_page;
-
-                // Botón Anterior
-                const prevLi = document.createElement('li');
-                prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
-                prevLi.innerHTML = `
-                    <a class="page-link" href="#" aria-label="Previous" onclick="loadPage(${currentPage - 1}, event)">
-                        <span aria-hidden="true">&laquo; Anterior</span>
-                    </a>
-                `;
-                pagination.appendChild(prevLi);
-
-                // Números de página
-                for (let i = 1; i <= lastPage; i++) {
-                    const pageLi = document.createElement('li');
-                    pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
-                    pageLi.innerHTML = `
-            <a class="page-link" href="#" onclick="loadPage(${i}, event)">${i}</a>
-        `;
-                    pagination.appendChild(pageLi);
-                }
-
-                // Botón Siguiente
-                const nextLi = document.createElement('li');
-                nextLi.className = `page-item ${currentPage === lastPage ? 'disabled' : ''}`;
-                nextLi.innerHTML = `
-        <a class="page-link" href="#" aria-label="Next" onclick="loadPage(${currentPage + 1}, event)">
-            <span aria-hidden="true">Siguiente &raquo;</span>
-        </a>
-    `;
-                pagination.appendChild(nextLi);
-            };
-
-            // Modifica la función loadPage para prevenir el comportamiento predeterminado
-            window.loadPage = (page, event) => {
-                if (event) {
-                    event.preventDefault(); // Esto evita el comportamiento predeterminado del enlace
-                }
-                loadMedicionesData(page);
-            };
-
-            // Función global para mostrar el modal de imagen
-            window.showImageModal = (imageUrl) => {
-                const modalImagen = document.getElementById('modalImagen');
-                modalImagen.src = imageUrl;
-
-                // Inicializar y mostrar el modal
-                const imagenModal = new bootstrap.Modal(document.getElementById('imagenModal'));
-                imagenModal.show();
-            };
-
-            // Cargar los datos iniciales
-            loadMedicionesData(1);
         });
     </script>
 @endpush --}}

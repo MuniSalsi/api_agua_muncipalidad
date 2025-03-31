@@ -72,9 +72,12 @@ class MedicionController extends Controller
             $fecha = request()->input('date');
             $estadoId = request()->input('estado');
 
-            if (!is_numeric($perPage) || $perPage < 1 || $perPage > 100) {
+            // Si per_page es "all", no paginamos
+            $paginate = $perPage !== 'all';
+
+            if ($paginate && (!is_numeric($perPage) || $perPage < 1 || $perPage > 100)) {
                 return response()->json([
-                    'error' => 'El parámetro per_page debe ser un número entre 1 y 100'
+                    'error' => 'El parámetro per_page debe ser un número entre 1 y 100 o "all"'
                 ], 400);
             }
 
@@ -104,10 +107,47 @@ class MedicionController extends Controller
                 });
             }
 
-            // Paginar resultados
-            $listadoMediciones = $query->orderBy('id', 'desc')->paginate($perPage);
+            // Ordenar
+            $query->orderBy('id', 'desc');
 
-            // Transformar datos
+            // Manejar la paginación o todos los resultados
+            if ($paginate) {
+                $listadoMediciones = $query->paginate($perPage);
+            } else {
+                $allResults = $query->get();
+                $total = $allResults->count();
+
+                return response()->json([
+                    'current_page' => 1,
+                    'data' => $allResults->map(function ($medicion) {
+                        return [
+                            'id' => $medicion->id,
+                            'nro_cuenta' => $medicion->nro_cuenta,
+                            'ruta' => $medicion->ruta,
+                            'orden' => $medicion->orden,
+                            'medicion' => $medicion->medicion,
+                            'fecha' => $medicion->fecha,
+                            'periodo' => $medicion->periodo,
+                            'codigo_medidor' => $medicion->codigo_medidor,
+                            'url_foto' => $medicion->fotoMedicion ? $medicion->fotoMedicion->url_foto : null,
+                            'estado' => $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : null,
+                        ];
+                    }),
+                    'first_page_url' => url()->current() . '?page=1',
+                    'from' => 1,
+                    'last_page' => 1,
+                    'last_page_url' => url()->current() . '?page=1',
+                    'links' => [],
+                    'next_page_url' => null,
+                    'path' => url()->current(),
+                    'per_page' => $total,
+                    'prev_page_url' => null,
+                    'to' => $total,
+                    'total' => $total,
+                ]);
+            }
+
+            // Transformar datos para respuesta paginada
             $data = $listadoMediciones->map(function ($medicion) {
                 return [
                     'id' => $medicion->id,
@@ -147,6 +187,7 @@ class MedicionController extends Controller
             ], 500);
         }
     }
+
 
     public function store(Request $request)
     {
@@ -381,7 +422,6 @@ class MedicionController extends Controller
         // Retorna la respuesta de descarga del archivo
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
-
 
     public function upload(Request $request)
     {
@@ -718,6 +758,90 @@ class MedicionController extends Controller
     }
 }
 
+// public function index2()
+// {
+//     try {
+//         // Validar parámetros
+//         $perPage = request()->input('per_page', 10);
+//         $searchTerm = request()->input('search');
+//         $fecha = request()->input('date');
+//         $estadoId = request()->input('estado');
+
+//         if (!is_numeric($perPage) || $perPage < 1 || $perPage > 100) {
+//             return response()->json([
+//                 'error' => 'El parámetro per_page debe ser un número entre 1 y 100'
+//             ], 400);
+//         }
+
+//         // Consulta base con relaciones
+//         $query = Medicion::with(['fotoMedicion', 'obtenerEstado']);
+
+//         // Aplicar filtro de búsqueda si existe
+//         if ($searchTerm) {
+//             $query->where(function ($q) use ($searchTerm) {
+//                 $q->where('nro_cuenta', 'LIKE', "%{$searchTerm}%")
+//                     ->orWhere('ruta', 'LIKE', "%{$searchTerm}%")
+//                     ->orWhere('orden', 'LIKE', "%{$searchTerm}%")
+//                     ->orWhere('medicion', 'LIKE', "%{$searchTerm}%")
+//                     ->orWhere('codigo_medidor', 'LIKE', "%{$searchTerm}%");
+//             });
+//         }
+
+//         // Filtro por fecha
+//         if ($fecha) {
+//             $query->whereDate('fecha', $fecha);
+//         }
+
+//         // Filtro por estado
+//         if ($estadoId) {
+//             $query->whereHas('obtenerEstado', function ($q) use ($estadoId) {
+//                 $q->where('id', $estadoId);
+//             });
+//         }
+
+//         // Paginar resultados
+//         $listadoMediciones = $query->orderBy('id', 'desc')->paginate($perPage);
+
+//         // Transformar datos
+//         $data = $listadoMediciones->map(function ($medicion) {
+//             return [
+//                 'id' => $medicion->id,
+//                 'nro_cuenta' => $medicion->nro_cuenta,
+//                 'ruta' => $medicion->ruta,
+//                 'orden' => $medicion->orden,
+//                 'medicion' => $medicion->medicion,
+//                 'fecha' => $medicion->fecha,
+//                 'periodo' => $medicion->periodo,
+//                 'codigo_medidor' => $medicion->codigo_medidor,
+//                 'url_foto' => $medicion->fotoMedicion ? $medicion->fotoMedicion->url_foto : null,
+//                 'estado' => $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : null,
+//             ];
+//         });
+
+//         return response()->json([
+//             'current_page' => $listadoMediciones->currentPage(),
+//             'data' => $data,
+//             'first_page_url' => $listadoMediciones->url(1),
+//             'from' => $listadoMediciones->firstItem(),
+//             'last_page' => $listadoMediciones->lastPage(),
+//             'last_page_url' => $listadoMediciones->url($listadoMediciones->lastPage()),
+//             'links' => $listadoMediciones->linkCollection()->toArray(),
+//             'next_page_url' => $listadoMediciones->nextPageUrl(),
+//             'path' => $listadoMediciones->path(),
+//             'per_page' => $listadoMediciones->perPage(),
+//             'prev_page_url' => $listadoMediciones->previousPageUrl(),
+//             'to' => $listadoMediciones->lastItem(),
+//             'total' => $listadoMediciones->total(),
+//         ]);
+//     } catch (\Exception $e) {
+//         Log::error('Error en MedicionController@index2: ' . $e->getMessage());
+//         return response()->json([
+//             'success' => false,
+//             'error' => 'Ocurrió un error al procesar la solicitud',
+//             'details' => config('app.debug') ? $e->getMessage() : null
+//         ], 500);
+//     }
+// }
 
     // private function getPeriodo($fecha)
     // {
