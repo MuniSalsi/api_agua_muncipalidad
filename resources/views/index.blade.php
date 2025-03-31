@@ -2,153 +2,562 @@
 
 @push('estilos')
     <style>
-        .hover-effect:hover {
-            background-color: #f8f9fa;
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #3498db;
+            --accent-color: #e74c3c;
+            --light-color: #ecf0f1;
+            --dark-color: #2c3e50;
+            --success-color: #27ae60;
+            --warning-color: #f39c12;
+            --danger-color: #e74c3c;
+            --info-color: #2980b9;
         }
 
-        .table-striped tbody tr:nth-of-type(odd) {
-            background-color: #f9f9f9;
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f7fa;
         }
 
-        .table-striped tbody tr:nth-of-type(even) {
-            background-color: #ffffff;
-        }
-
-        .table th,
-        .table td {
-            vertical-align: middle;
-            text-align: center;
-        }
-
-        .estado-borroso {
-            color: #6c757d;
-        }
-
-        .estado-con-aire {
-            color: #17a2b8;
-        }
-
-        .estado-en-interior {
-            color: #28a745;
-        }
-
-        .estado-roto {
-            color: #dc3545;
-        }
-
-        .estado-sin-instalar {
-            color: #ffc107;
-        }
-
-        .estado-sin-situacion {
-            color: #6f42c1;
-        }
-
-        .estado-tapado {
-            color: #343a40;
-        }
-
-        .btn-container {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 20px;
+        /* ELIMINADO EL MÁXIMO ANCHO PARA QUE OCUPE TODA LA PANTALLA */
+        .container-fluid {
+            padding: 20px;
+            width: 100%;
         }
 
         .logo-container {
             text-align: center;
-            margin-bottom: 20px;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 60%;
+            margin: 20px auto;
         }
 
         .logo-container img {
-            max-width: 120px;
+            max-width: 150px;
             height: auto;
+            margin-bottom: 15px;
         }
 
+        .page-title {
+            color: var(--primary-color);
+            font-weight: 600;
+            margin-bottom: 30px;
+            text-align: center;
+            position: relative;
+            padding-bottom: 15px;
+        }
+
+        .page-title:after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 3px;
+            background: var(--secondary-color);
+        }
+
+        .card {
+            border: none;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            overflow: hidden;
+            width: 100%;
+            /* AÑADIDO PARA QUE LA CARD OCUPE TODO EL ANCHO */
+        }
+
+        .card-header {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            padding: 15px 20px;
+            border-bottom: none;
+        }
+
+        /* MODIFICADO PARA OCUPAR TODO EL ANCHO */
         .table-responsive {
-            overflow-x: unset !important;
+            border-radius: 10px;
+            overflow-x: auto;
+            width: 100%;
+            display: block;
         }
 
-        /* Diseño de botones */
+        /* MODIFICADO PARA OCUPAR TODO EL ANCHO */
+        .table {
+            margin-bottom: 0;
+            width: 100%;
+            table-layout: auto;
+        }
+
+        .table th {
+            background-color: var(--primary-color);
+            color: white;
+            font-weight: 500;
+            padding: 15px;
+            text-align: center;
+            vertical-align: middle;
+            border: none;
+            white-space: nowrap;
+        }
+
+        .table td {
+            padding: 12px 15px;
+            vertical-align: middle;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+            white-space: nowrap;
+        }
+
+        .table-striped tbody tr:nth-of-type(odd) {
+            background-color: rgba(236, 240, 241, 0.5);
+        }
+
+        .table-striped tbody tr:nth-of-type(even) {
+            background-color: white;
+        }
+
+        .table-hover tbody tr:hover {
+            background-color: rgba(52, 152, 219, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        /* Estado classes */
+        .estado-borroso {
+            color: #7f8c8d;
+            font-weight: 500;
+        }
+
+        .estado-con-aire {
+            color: #3498db;
+            font-weight: 500;
+        }
+
+        .estado-en-interior {
+            color: var(--success-color);
+            font-weight: 500;
+        }
+
+        .estado-roto {
+            color: var(--danger-color);
+            font-weight: 500;
+        }
+
+        .estado-sin-instalar {
+            color: var(--warning-color);
+            font-weight: 500;
+        }
+
+        .estado-sin-situacion {
+            color: #9b59b6;
+            font-weight: 500;
+        }
+
+        .estado-tapado {
+            color: var(--dark-color);
+            font-weight: 500;
+        }
+
+        /* Botones */
+        .btn-container {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 30px;
+        }
+
+        .btn {
+            border-radius: 50px;
+            padding: 10px 25px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            border: none;
+            margin: 0 10px;
+        }
+
         .btn-lg {
-            font-size: 1.25rem;
-            padding: 0.5rem 1.25rem;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+        }
+
+        .btn-primary {
+            background-color: var(--secondary-color);
+        }
+
+        .btn-primary:hover {
+            background-color: #2980b9;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-danger {
+            background-color: var(--danger-color);
+        }
+
+        .btn-danger:hover {
+            background-color: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .btn-info {
+            background-color: var(--info-color);
+            color: white;
+        }
+
+        .btn-secondary {
+            background-color: #95a5a6;
+        }
+
+        /* Paginación */
+        .pagination-container {
+            display: flex;
+            justify-content: center;
+            margin: 30px 0;
+        }
+
+        .pagination {
+            display: flex;
+            gap: 5px;
+            flex-wrap: wrap;
+        }
+
+        .page-item {
+            margin: 0;
+        }
+
+        .page-link {
+            color: var(--primary-color);
+            border: 1px solid #ddd;
+            border-radius: 5px !important;
+            padding: 8px 15px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .page-link:hover {
+            background-color: var(--secondary-color);
+            color: white;
+            border-color: var(--secondary-color);
+        }
+
+        .page-item.active .page-link {
+            background-color: var(--secondary-color);
+            border-color: var(--secondary-color);
+            color: white;
+        }
+
+        .page-item.disabled .page-link {
+            color: #95a5a6;
+            pointer-events: none;
+            cursor: not-allowed;
+            background-color: #ecf0f1;
+            border-color: #ddd;
+        }
+
+        /* Modal */
+        .modal-content {
+            border: none;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
         }
 
         .modal-header {
-            background-color: #f1f1f1;
+            background-color: var(--primary-color);
+            color: white;
+            border-bottom: none;
+            padding: 15px 20px;
         }
 
         .modal-title {
-            color: #007bff;
+            font-weight: 600;
         }
 
-        .dataTables_wrapper .dataTables_length select,
-        .dataTables_wrapper .dataTables_paginate .paginate_button {
+        .modal-body {
+            padding: 20px;
+        }
+
+        .modal-footer {
+            border-top: none;
+            padding: 15px 20px;
             background-color: #f8f9fa;
         }
 
-        .dataTables_wrapper .dataTables_paginate .paginate_button:hover {
-            background-color: #e9ecef;
+        /* Formularios */
+        .form-select,
+        .form-control {
+            border-radius: 5px;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            transition: all 0.3s ease;
+        }
+
+        .form-select:focus,
+        .form-control:focus {
+            border-color: var(--secondary-color);
+            box-shadow: 0 0 0 0.25rem rgba(52, 152, 219, 0.25);
+        }
+
+        /* Imágenes en tabla */
+        .img-thumbnail {
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: 1px solid #ddd;
+            padding: 2px;
+            max-width: 50px;
+            height: auto;
+        }
+
+        .img-thumbnail:hover {
+            transform: scale(1.05);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .no-image {
+            color: #95a5a6;
+            font-style: italic;
+        }
+
+        .div-img-container {
+            display: flex;
+            justify-content: space-evenly;
+            align-items: center;
+            /* Centra verticalmente las imágenes */
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            /* Permite que los elementos se ajusten en pantallas pequeñas */
+            gap: 20px;
+            /* Espacio entre imágenes */
+        }
+
+        .div-img-container img {
+            max-width: 100%;
+            /* Asegura que las imágenes no excedan el ancho del contenedor */
+            height: auto;
+            /* Mantiene la proporción de aspecto */
+            max-height: 180px;
+            /* Altura máxima para pantallas grandes */
+            object-fit: contain;
+            /* Asegura que la imagen completa sea visible */
+        }
+
+        .filters .input-group-sm .form-control,
+        .filters .input-group-sm .btn {
+            height: calc(1.5em + 0.5rem + 2px);
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        .filters label {
+            font-weight: 500;
+            color: #495057;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .logo-container {
+                width: 90%;
+            }
+
+            .div-img-container {
+                gap: 15px;
+                margin-bottom: 20px;
+            }
+
+            .div-img-container img {
+                max-height: 120px;
+                /* Altura máxima reducida para móviles */
+                width: auto;
+                /* Ancho automático basado en la proporción */
+            }
+
+            .btn-container {
+                flex-direction: column;
+                gap: 10px;
+            }
+
+            .btn {
+                width: 100%;
+                margin: 5px 0;
+            }
+
+            .table-responsive {
+                overflow-x: auto;
+                display: block;
+                width: 100%;
+            }
+
+            .pagination {
+                gap: 3px;
+            }
+
+            .page-link {
+                padding: 6px 10px;
+                font-size: 0.9rem;
+            }
+
+            .filters .d-flex {
+                gap: 1rem !important;
+            }
+
+            .filters>div>div {
+                width: 100% !important;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .div-img-container img {
+                max-height: 90px;
+                /* Altura aún más pequeña para pantallas muy pequeñas */
+            }
+
+            .logo-container h2 {
+                font-size: 1.5rem;
+                /* Reduce el tamaño del título principal */
+            }
+
+            .logo-container h4 {
+                font-size: 1rem;
+                /* Reduce el tamaño del subtítulo */
+            }
         }
     </style>
 @endpush
 
 @section('contenido')
-    <div class="container-fluid mt-5">
+    <div class="container-fluid mt-4">
+        <!-- Spinner de carga -->
+        <div id="loadingSpinner" class="my-3 text-center" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+            <p>Cargando datos...</p>
+        </div>
+
+        <!-- Mensaje de error -->
+        <div id="errorAlert" class="alert alert-danger" style="display: none;"></div>
+
         <!-- Título y Logo -->
-        <div class="logo-container text-center mb-4">
-            <img src="{{ asset('img/logo/logo_municipalidad_salsipuedes.png') }}" alt="Logo Municipalidad Salsipuedes"
-                class="img-fluid">
-            <h1 class="text-primary">Dirección de Agua - Municipalidad de Salsipuedes</h1>
+        <div class="logo-container">
+            <div class="div-img-container">
+                <img src="{{ asset('img/logo/logo_municipalidad_salsipuedes.png') }}" alt="Logo Municipalidad Salsipuedes">
+                <img src="{{ asset('img/logo/logo-agua.svg') }}" alt="Logo app agua">
+            </div>
+
+            <h2 class="text-dark mb-0">Dirección de Agua</h2>
+            <h4 class="text-muted">Municipalidad de Salsipuedes</h4>
         </div>
 
-        <h3 class="mb-4 text-center text-primary">Listado de Mediciones</h3>
+        <h2 class="page-title">Listado de Mediciones</h2>
 
-        <!-- Botones centrados -->
-        <div class="text-center mb-4">
+        <!-- Botón de generar reporte -->
+        <div class="btn-container d-flex justify-content-center mb-5">
             <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#periodoModal">
-                <i class="bi bi-file-earmark-text"></i> Generar Reporte
+                <i class="bi bi-file-earmark-text me-2"></i> Generar Reporte
             </button>
-            <a class="btn btn-success btn-lg" href="#">
-                <i class="bi bi-calculator"></i> Calcular Consumos
-            </a>
+
         </div>
 
-        <div class="table-responsive">
-            <!-- Aquí es donde se generan las filas de la tabla (DataTable) -->
-            <table id="medicionesTable" class="table table-striped table-bordered table-hover">
-                <thead class="thead-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Número de Cuenta</th>
-                        <th>Ruta</th>
-                        <th>Orden</th>
-                        <th>Medición</th>
-                        <th>Consumo</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th>Periodo</th>
-                        <th>Imagen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Las filas se cargarán mediante AJAX -->
-                </tbody>
-            </table>
+        <!-- Filtros -->
+        <div class="filters mb-4">
+            <div class="d-flex align-items-end justify-content-center flex-wrap gap-3">
+                <!-- Fecha - Más compacto -->
+                <div style="width: 180px">
+                    <label for="date" class="form-label small mb-1">Fecha</label>
+                    <input type="date" placeholder="Seleccione una fecha" name="date" id="date"
+                        class="form-control form-control-sm">
+                </div>
+
+                <!-- Estado -->
+                <div style="width: 200px">
+                    <label for="estado" class="form-label small mb-1">Estados</label>
+                    <select name="estado" id="estado" class="form-select form-select-sm">
+                        <option value="">Todos los estados</option>
+                        @foreach ($estados as $estado)
+                            <option value="{{ $estado->id }}">{{ $estado->tipo }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Búsqueda - Más compacto -->
+                <div style="width: 300px">
+                    <label for="searchInput" class="form-label small mb-1">Búsqueda</label>
+                    <div class="input-group input-group-sm">
+                        <input type="text" id="searchInput" class="form-control"
+                            placeholder="Buscar por nro cuenta, ruta, orden..." autocomplete="off">
+                        <button class="btn btn-outline-secondary" type="button">
+                            <i class="bi bi-search"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Botón Reset al final -->
+                <div class="mb-1">
+                    <button id="resetFilters" class="btn btn-secondary btn-sm">
+                        <i class="bi bi-arrow-counterclockwise me-1"></i> Resetear
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tabla de mediciones -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table id="medicionesTable" class="table-striped table-hover table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Número de Cuenta</th>
+                                <th>Ruta</th>
+                                <th>Orden</th>
+                                <th>Medición</th>
+                                <th>Fecha</th>
+                                <th>Estado</th>
+                                <th>Periodo</th>
+                                <th>Imagen</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Los datos se cargarán dinámicamente via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Paginación -->
+        <div class="pagination-container mt-3">
+            <nav aria-label="Page navigation">
+                <ul class="pagination justify-content-center" id="pagination">
+                    <!-- La paginación se generará dinámicamente via JavaScript -->
+                </ul>
+            </nav>
         </div>
     </div>
 
     <!-- Modal para las imágenes -->
     <div class="modal fade" id="imagenModal" tabindex="-1" aria-labelledby="imagenModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title" id="imagenModalLabel">Imagen de Lectura</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <div class="modal-body" id="modalImagenBody">
-                    <!-- Las imágenes se cargarán dinámicamente aquí -->
+                <div class="modal-body text-center">
+                    <img id="modalImagen" src="" alt="Imagen de lectura" class="img-fluid rounded"
+                        style="max-height: 70vh;">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
                 </div>
             </div>
         </div>
@@ -179,458 +588,479 @@
                         <div class="mb-3">
                             <label for="anio" class="form-label">Año</label>
                             <select class="form-select" id="anio" name="anio" required>
-                                <script>
-                                    const currentYear = new Date().getFullYear();
-                                    let options = '';
-                                    for (let year = currentYear + 10; year >= currentYear - 10; year--) {
-                                        const selected = year === currentYear ? 'selected' : '';
-                                        options += `<option value="${year.toString().slice(-2)}" ${selected}>${year}</option>`;
+                                @php
+                                    $currentYear = date('Y');
+                                    for ($year = $currentYear + 10; $year >= $currentYear - 10; $year--) {
+                                        $selected = $year == $currentYear ? 'selected' : '';
+                                        echo "<option value='" . substr($year, -2) . "' $selected>$year</option>";
                                     }
-                                    document.write(options);
-                                </script>
+                                @endphp
                             </select>
                         </div>
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary">Generar Reporte</button>
-                        </div>
-                    </form>
                 </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Generar Reporte</button>
+                </div>
+                </form>
             </div>
         </div>
     </div>
 @endsection
 
-
-
 @push('scripts')
     <script>
-        $(document).ready(function() {
-            let idiomaUrl = "{{ env('IDIOMA_DATATABLES_URL') }}";
+        // Mover loadMedicionesData al ámbito global
+        let loadMedicionesData;
 
-            $('#medicionesTable').DataTable({
-                "processing": true,
-                "serverSide": true,
-                "ajax": {
-                    "url": "{{ route('get.mediciones') }}",
-                    "dataSrc": function(json) {
-                        return json.data.map(function(medicion) {
-                            return {
-                                id: medicion[0],
-                                nro_cuenta: medicion[1],
-                                ruta: medicion[2],
-                                orden: medicion[3],
-                                medicion: medicion[4],
-                                consumo: medicion[5],
-                                fecha: medicion[6],
-                                estado: medicion[7],
-                                periodo: medicion[8],
-                                imagen: medicion[9] ? Object.values(medicion[9]) : []
-                            };
-                        });
-                    }
-                },
-                "language": {
-                    "url": idiomaUrl
-                },
-                "columns": [{
-                        "data": "id"
-                    },
-                    {
-                        "data": "nro_cuenta"
-                    },
-                    {
-                        "data": "ruta"
-                    },
-                    {
-                        "data": "orden"
-                    },
-                    {
-                        "data": "medicion"
-                    },
-                    {
-                        "data": "consumo"
-                    },
-                    {
-                        "data": "fecha"
-                    },
-                    {
-                        "data": "estado"
-                    },
-                    {
-                        "data": "periodo"
-                    },
-                    {
-                        "data": "imagen",
-                        "render": function(data, type, row) {
-                            if (data && data.length > 0) {
-                                return `<button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal" data-bs-target="#imagenModal" data-imagen-url="${data.join(',')}">Ver Imagen</button>`;
-                            } else {
-                                return 'Sin Imagen';
-                            }
-                        }
-                    }
-                ],
-                "lengthChange": true, // Habilita el cambio de longitud de página
-                "pageLength": 10, // Número de registros por página por defecto
-                "paging": true, // Habilita la paginación
+        // Funciones globales que necesitan ser accesibles
+        function performSearch() {
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            const fecha = document.getElementById('date').value;
+            const estadoId = document.getElementById('estado').value;
+            loadMedicionesData(1, searchTerm, fecha, estadoId);
+        }
+
+        function handlePaginationClick(page, event, searchTerm, fecha, estadoId) {
+            if (event) event.preventDefault();
+            loadMedicionesData(page, searchTerm, fecha, estadoId);
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        }
+
+        function showImageModal(imageUrl) {
+            const modalImagen = document.getElementById('modalImagen');
+            modalImagen.src = imageUrl;
+            const imagenModal = new bootstrap.Modal(document.getElementById('imagenModal'));
+            imagenModal.show();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            // Elementos del DOM
+            const searchInput = document.getElementById('searchInput');
+            const dateFilter = document.getElementById('date');
+            const estadoFilter = document.getElementById('estado');
+            let searchTimeout;
+
+            // Event listeners
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(performSearch, 300);
             });
 
+            dateFilter.addEventListener('change', performSearch);
+            estadoFilter.addEventListener('change', performSearch);
 
-            // Evento para abrir el modal y cargar las imágenes
-            $('#imagenModal').on('show.bs.modal', function(event) {
-                const button = $(event.relatedTarget); // Botón que activó el modal
-                const imagenUrls = button.data('imagen-url').split(','); // URLs de las imágenes
+            // Definición de loadMedicionesData (ahora accesible globalmente)
+            loadMedicionesData = async function(page = 1, searchTerm = '', fecha = '', estadoId = '') {
+                try {
+                    toggleLoading(true);
 
-                const modalBody = $(this).find('.modal-body');
-                modalBody.empty(); // Limpiar el contenido previo
+                    let url = new URL(`{{ route('api.mediciones_index2') }}`);
+                    url.searchParams.append('page', page);
 
-                if (imagenUrls.length > 1) {
-                    // Crear el carrusel si hay más de una imagen
-                    const carouselInner = $('<div class="carousel-inner"></div>');
-                    imagenUrls.forEach(function(url, index) {
-                        const isActive = index === 0 ? 'active' : '';
-                        const item = $(
-                            `<div class="carousel-item ${isActive}"><img src="${url}" class="d-block w-100" alt="Imagen"></div>`
-                        );
-                        carouselInner.append(item);
-                    });
+                    if (searchTerm) url.searchParams.append('search', searchTerm);
+                    if (fecha) url.searchParams.append('date', fecha);
+                    if (estadoId) url.searchParams.append('estado', estadoId);
 
-                    const carousel = $(
-                        '<div id="imagenCarousel" class="carousel slide" data-bs-ride="carousel"></div>'
-                    );
-                    carousel.append(carouselInner);
+                    const response = await fetch(url);
+                    if (!response.ok) throw new Error('Error en la respuesta del servidor');
 
-                    // Agregar los controles del carrusel
-                    const prevButton = $(
-                        '<button class="carousel-control-prev" type="button" data-bs-target="#imagenCarousel" data-bs-slide="prev"><span class="carousel-control-prev-icon" aria-hidden="true"></span><span class="visually-hidden">Previous</span></button>'
-                    );
-                    const nextButton = $(
-                        '<button class="carousel-control-next" type="button" data-bs-target="#imagenCarousel" data-bs-slide="next"><span class="carousel-control-next-icon" aria-hidden="true"></span><span class="visually-hidden">Next</span></button>'
-                    );
+                    const data = await response.json();
+                    updateTable(data.data);
+                    updatePagination(data, searchTerm, fecha, estadoId);
+                } catch (error) {
+                    console.error('Error:', error);
+                    showError('Error al cargar datos. Intente nuevamente.');
+                } finally {
+                    toggleLoading(false);
+                }
+            };
 
-                    carousel.append(prevButton, nextButton);
-                    modalBody.append(carousel);
-                } else {
-                    // Mostrar una sola imagen si solo hay una
-                    const img = $('<img>').attr('src', imagenUrls[0]).addClass('img-fluid mb-2');
-                    modalBody.append(img);
+            // Resto de las funciones (updateTable, updatePagination, etc.) permanecen igual
+            const updateTable = (mediciones) => {
+                const tbody = document.querySelector('#medicionesTable tbody');
+                tbody.innerHTML = '';
+
+                if (!mediciones || mediciones.length === 0) {
+                    tbody.innerHTML =
+                        `<tr><td colspan="9" class="text-center py-4">No se encontraron mediciones</td></tr>`;
+                    return;
+                }
+
+                mediciones.forEach(medicion => {
+                    const estadoClass = getEstadoClass(medicion.estado);
+                    const imagenCell = medicion.url_foto ?
+                        `<button class="btn btn-info btn-sm" onclick="showImageModal('${medicion.url_foto}')">Ver Imagen</button>` :
+                        '<span class="no-image">Sin imagen</span>';
+
+                    const row = `
+                    <tr>
+                        <td>${medicion.id}</td>
+                        <td>${medicion.nro_cuenta}</td>
+                        <td>${medicion.ruta}</td>
+                        <td>${medicion.orden}</td>
+                        <td>${medicion.medicion}</td>
+                        <td>${medicion.fecha}</td>
+                        <td class="${estadoClass}">${medicion.estado}</td>
+                        <td>${medicion.periodo}</td>
+                        <td>${imagenCell}</td>
+                    </tr>
+                `;
+                    tbody.insertAdjacentHTML('beforeend', row);
+                });
+            };
+
+            function getEstadoClass(estado) {
+                const clases = {
+                    'Borroso': 'estado-borroso',
+                    'Con Aire': 'estado-con-aire',
+                    'En Interior': 'estado-en-interior',
+                    'Roto': 'estado-roto',
+                    'Sin Instalar': 'estado-sin-instalar',
+                    'Sin Situacion': 'estado-sin-situacion',
+                    'Tapado': 'estado-tapado'
+                };
+                return clases[estado] || '';
+            }
+
+            const updatePagination = (data, searchTerm, fecha, estadoId) => {
+                const pagination = document.getElementById('pagination');
+                if (!pagination) return;
+
+                pagination.innerHTML = '';
+                const {
+                    current_page,
+                    last_page
+                } = data;
+
+                if (current_page > 1) {
+                    pagination.appendChild(createPageItem(
+                        '&laquo; Anterior',
+                        current_page - 1,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        false,
+                        'Previous'
+                    ));
+                }
+
+                const start = Math.max(1, current_page - 2);
+                const end = Math.min(last_page, current_page + 2);
+
+                if (start > 1) {
+                    pagination.appendChild(createPageItem(1, 1, searchTerm, fecha, estadoId));
+                    if (start > 2) {
+                        pagination.appendChild(createEllipsis());
+                    }
+                }
+
+                for (let i = start; i <= end; i++) {
+                    pagination.appendChild(createPageItem(
+                        i,
+                        i,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        i === current_page
+                    ));
+                }
+
+                if (end < last_page) {
+                    if (end < last_page - 1) {
+                        pagination.appendChild(createEllipsis());
+                    }
+                    pagination.appendChild(createPageItem(last_page, last_page, searchTerm, fecha, estadoId));
+                }
+
+                if (current_page < last_page) {
+                    pagination.appendChild(createPageItem(
+                        'Siguiente &raquo;',
+                        current_page + 1,
+                        searchTerm,
+                        fecha,
+                        estadoId,
+                        false,
+                        'Next'
+                    ));
+                }
+            };
+
+            function createPageItem(text, page, searchTerm, fecha, estadoId, isActive = false, ariaLabel = null) {
+                const li = document.createElement('li');
+                li.className = `page-item ${isActive ? 'active' : ''}`;
+
+                const a = document.createElement('a');
+                a.className = 'page-link';
+                a.href = '#';
+                a.innerHTML = text;
+                if (ariaLabel) a.setAttribute('aria-label', ariaLabel);
+                a.onclick = (e) => {
+                    e.preventDefault();
+                    loadMedicionesData(page, searchTerm, fecha, estadoId);
+                };
+
+                li.appendChild(a);
+                return li;
+            }
+
+            function createEllipsis() {
+                const li = document.createElement('li');
+                li.className = 'page-item disabled';
+                li.innerHTML = '<span class="page-link">...</span>';
+                return li;
+            }
+
+            function toggleLoading(show) {
+                const spinner = document.getElementById('loadingSpinner');
+                if (spinner) spinner.style.display = show ? 'block' : 'none';
+            }
+
+            function showError(message) {
+                const errorAlert = document.getElementById('errorAlert');
+                if (errorAlert) {
+                    errorAlert.textContent = message;
+                    errorAlert.style.display = 'block';
+                    setTimeout(() => errorAlert.style.display = 'none', 5000);
+                }
+            }
+
+            document.getElementById('resetFilters')?.addEventListener('click', () => {
+                searchInput.value = '';
+                dateFilter.value = '';
+                estadoFilter.value = '';
+                loadMedicionesData(1);
+            });
+
+            // Carga inicial
+            loadMedicionesData(1);
+        });
+
+        $('#periodoForm').submit(function(event) {
+            event.preventDefault(); // Evita el comportamiento por defecto del formulario
+            let periodo = $('#periodo').val();
+            let anio = $('#anio').val();
+            let periodoAnio = `${periodo} - ${anio}`;
+
+            // Definir correctamente la URL
+            let url =
+                `{{ route('api_exportar_mediciones') }}?periodo=${encodeURIComponent(periodoAnio)}`;
+
+            // Mostrar mensaje de carga
+            Swal.fire({
+                title: 'Generando reporte...',
+                text: 'Por favor, espere.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
                 }
             });
 
-            $('#periodoForm').submit(function(event) {
-                event.preventDefault(); // Evita el comportamiento por defecto del formulario
-                let periodo = $('#periodo').val();
-                let anio = $('#anio').val();
-                let periodoAnio = `${periodo} - ${anio}`;
-
-                // Definir correctamente la URL
-                let url =
-                    `{{ route('api_exportar_mediciones') }}?periodo=${encodeURIComponent(periodoAnio)}`;
-
-                // Mostrar mensaje de carga
-                Swal.fire({
-                    title: 'Generando reporte...',
-                    text: 'Por favor, espere.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading();
+            // Realizar la petición AJAX
+            $.ajax({
+                url: url,
+                type: 'GET',
+                success: function(response) {
+                    console.log(response);
+                    Swal.close(); // Cierra el mensaje de carga
+                    window.location.href = url; // Redirige al usuario al reporte generado
+                },
+                error: function(xhr) {
+                    console.log(xhr);
+                    Swal.close(); // Cierra el mensaje de carga
+                    if (xhr.status === 404) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'No se encontraron mediciones para el período especificado.',
+                            confirmButtonText: 'Aceptar'
+                        });
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: 'Hubo un problema al generar el reporte.',
+                            confirmButtonText: 'Aceptar'
+                        });
                     }
-                });
-
-                // Realizar la petición AJAX
-                $.ajax({
-                    url: url,
-                    type: 'GET',
-                    success: function(response) {
-                        Swal.close(); // Cierra el mensaje de carga
-                        window.location.href = url; // Redirige al usuario al reporte generado
-                    },
-                    error: function(xhr) {
-                        Swal.close(); // Cierra el mensaje de carga
-                        if (xhr.status === 404) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'No se encontraron mediciones para el período especificado.',
-                                confirmButtonText: 'Aceptar'
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Hubo un problema al generar el reporte.',
-                                confirmButtonText: 'Aceptar'
-                            });
-                        }
-                    }
-                });
+                }
             });
-
         });
     </script>
 @endpush
 
-
-
-
-
-
-
-{{-- @section('contenido')
-    <div class="container-fluid mt-5">
-        <!-- Título y Logo -->
-        <div class="logo-container">
-            <img src="{{ asset('img/logo/logo_municipalidad_salsipuedes.png') }}" alt="Logo Municipalidad Salsipuedes">
-            <h1 class="text-center text-primary">Dirección de Agua - Municipalidad de Salsipuedes</h1>
-        </div>
-
-        <h3 class="mb-4 text-center text-primary">Listado de Mediciones</h3>
-
-        <!-- Botones centrados -->
-        <div class="text-center mb-4 btn-container">
-            <button class="btn btn-danger btn-lg" data-bs-toggle="modal" data-bs-target="#periodoModal">
-                <i class="bi bi-file-earmark-text"></i> Generar Reporte
-            </button>
-            <a class="btn btn-success btn-lg" href="#">
-                <i class="bi bi-calculator"></i> Calcular Consumos
-            </a>
-        </div>
-
-
-        <div class="table-responsive">
-            <table class="table table-striped table-bordered shadow-sm" id="listado_mediciones">
-                <thead class="table-dark">
-                    <tr>
-                        <th>ID</th>
-                        <th>Número de Cuenta</th>
-                        <th>Ruta</th>
-                        <th>Orden</th>
-                        <th>Medición</th>
-                        <th>Consumo</th>
-                        <th>Fecha</th>
-                        <th>Estado</th>
-                        <th>Periodo</th>
-                        <th>Imagen</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach ($mediciones as $medicion)
-                        <tr class="hover-effect">
-                            <td>{{ $medicion->id }}</td>
-                            <td>{{ $medicion->nro_cuenta }}</td>
-                            <td>{{ $medicion->ruta }}</td>
-                            <td>{{ $medicion->orden }}</td>
-                            <td>{{ $medicion->medicion }}</td>
-                            <td>
-                                @if (is_null($medicion->consumo))
-                                    <span class="text-danger">Pendiente de calcular</span>
-                                @else
-                                    {{ $medicion->consumo }}
-                                @endif
-                            </td>
-                            <td>{{ $medicion->fecha }}</td>
-                            <td class="{{ 'estado-' . str_replace(' ', '-', strtolower($medicion->estado)) }}">
-                                {{ $medicion->estado }}
-                            </td>
-                            <td>{{ $medicion->periodo }}</td>
-                            <td>
-                                @if (isset($medicion->imagenes[0]))
-                                    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
-                                        data-bs-target="#imagenModal{{ $medicion->id }}">
-                                        Ver Imagen
-                                    </button>
-
-                                    <!-- Modal -->
-                                    <div class="modal fade" id="imagenModal{{ $medicion->id }}" tabindex="-1"
-                                        aria-labelledby="imagenModalLabel{{ $medicion->id }}" aria-hidden="true">
-                                        <div class="modal-dialog modal-dialog-centered">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="imagenModalLabel{{ $medicion->id }}">Imagen
-                                                        de
-                                                        la Medición</h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal"
-                                                        aria-label="Close"></button>
-                                                </div>
-                                                <div class="modal-body">
-                                                    <img src="{{ asset($medicion->imagenes[0]) }}"
-                                                        alt="Imagen de la medición" class="img-fluid">
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                        data-bs-dismiss="modal">Cerrar</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                @else
-                                    Sin Imagen
-                                @endif
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Modal para seleccionar período -->
-    <div class="modal fade" id="periodoModal" tabindex="-1" aria-labelledby="periodoModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="periodoModalLabel">Seleccionar Período</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="periodoForm">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="periodo" class="form-label">Período</label>
-                            <select class="form-select" id="periodo" name="periodo" required>
-                                <option value="Periodo 1">Periodo 1 (21/12 al 20/02)</option>
-                                <option value="Periodo 3">Periodo 3 (21/02 al 20/04)</option>
-                                <option value="Periodo 5">Periodo 5 (21/04 al 20/06)</option>
-                                <option value="Periodo 7">Periodo 7 (21/06 al 20/08)</option>
-                                <option value="Periodo 9">Periodo 9 (21/08 al 20/10)</option>
-                                <option value="Periodo 11">Periodo 11 (21/10 al 20/12)</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="anio" class="form-label">Año</label>
-                            <select class="form-select" id="anio" name="anio" required>
-                                <script>
-                                    // Generar dinámicamente los últimos 10 años y los próximos 10 años
-                                    const currentYear = new Date().getFullYear();
-                                    let options = '';
-                                    for (let year = currentYear + 10; year >= currentYear - 10; year--) {
-                                        const selected = year === currentYear ? 'selected' : '';
-                                        options += `<option value="${year.toString().slice(-2)}" ${selected}>${year}</option>`;
-                                    }
-                                    document.write(options);
-                                </script>
-                            </select>
-                        </div>
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-primary">Generar Reporte</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
-@endsection
-
-@push('scripts')
+{{-- @push('scripts')
     <script>
-        $(document).ready(function() {
-            let idiomaUrl = "{{ env('IDIOMA_DATATABLES_URL') }}";
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            let searchTimeout;
 
-            // Verifica si el DataTable ya está inicializado
-            if (!$.fn.DataTable.isDataTable('#listado_mediciones')) {
-                // Configuración de DataTable para la tabla
-                $('#listado_mediciones').DataTable({
-                    "language": {
-                        "url": idiomaUrl
-                    }
-                });
-            }
-
-            // Manejar el envío del formulario de período
-            $('#periodoForm').submit(function(event) {
-                event.preventDefault(); // Evita el comportamiento por defecto del formulario
-
-                let periodo = $('#periodo').val();
-                let anio = $('#anio').val();
-                let periodoAnio = `${periodo} - ${anio}`;
-                let url =
-                    `{{ route('api_exportar_mediciones') }}?periodo=${encodeURIComponent(periodoAnio)}`;
-
-                // Mostrar mensaje de carga
-                Swal.fire({
-                    title: 'Generando reporte...',
-                    text: 'Por favor, espere.',
-                    allowOutsideClick: false,
-                    didOpen: () => {
-                        Swal.showLoading()
-                    }
-                });
-
-                // Redirige a la URL con el período y año seleccionado
-                $.ajax({
-                    url: url,
-                    type: 'GET',
-                    success: function(response) {
-                        Swal.close(); // Cierra el mensaje de carga
-                        window.location.href = url;
-                    },
-                    error: function(xhr) {
-                        Swal.close(); // Cierra el mensaje de carga
-                        if (xhr.status === 404) {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'No se encontraron mediciones para el período especificado.',
-                                confirmButtonText: 'Aceptar'
-                            });
-                        } else {
-                            Swal.fire({
-                                icon: 'error',
-                                title: 'Error',
-                                text: 'Hubo un problema al generar el reporte.',
-                                confirmButtonText: 'Aceptar'
-                            });
-                        }
-                    }
-                });
+            // Evento para búsqueda en tiempo real con debounce
+            searchInput.addEventListener('input', function() {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => {
+                    performSearch();
+                }, 300); // 300ms de delay para evitar muchas peticiones
             });
+
+            const performSearch = () => {
+                const searchTerm = searchInput.value.trim();
+                loadMedicionesData(1, searchTerm);
+            };
+
+            // Función para cargar los datos de las mediciones
+            const loadMedicionesData = async (page = 1, searchTerm = '') => {
+                try {
+                    const response = await fetch(
+                        `{{ route('api.mediciones_index2') }}?page=${page}&search=${encodeURIComponent(searchTerm)}`
+                    );
+                    const data = await response.json();
+
+                    // Actualizar la tabla con los datos recibidos
+                    updateTable(data.data);
+
+                    // Actualizar la paginación
+                    updatePagination(data);
+                } catch (error) {
+                    console.error('Error al cargar los datos:', error);
+                }
+            };
+
+            // Función para actualizar la tabla con los datos
+            const updateTable = (mediciones) => {
+                const tbody = document.querySelector('#medicionesTable tbody');
+                tbody.innerHTML = ''; // Limpiar la tabla antes de agregar nuevos datos
+
+                if (mediciones.length === 0) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="9" class="text-center py-4">No se encontraron mediciones</td>
+                        </tr>
+                    `;
+                    return;
+                }
+
+                mediciones.forEach(medicion => {
+                    const row = document.createElement('tr');
+
+                    // Determinar la clase de estado según el valor
+                    let estadoClass = '';
+                    switch (medicion.estado) {
+                        case 'Borroso':
+                            estadoClass = 'estado-borroso';
+                            break;
+                        case 'Con Aire':
+                            estadoClass = 'estado-con-aire';
+                            break;
+                        case 'En Interior':
+                            estadoClass = 'estado-en-interior';
+                            break;
+                        case 'Roto':
+                            estadoClass = 'estado-roto';
+                            break;
+                        case 'Sin Instalar':
+                            estadoClass = 'estado-sin-instalar';
+                            break;
+                        case 'Sin Situacion':
+                            estadoClass = 'estado-sin-situacion';
+                            break;
+                        case 'Tapado':
+                            estadoClass = 'estado-tapado';
+                            break;
+                        default:
+                            estadoClass = '';
+                    }
+
+                    // Crear el botón o mensaje para la imagen
+                    let imagenCell = '';
+                    if (medicion.url_foto) {
+                        imagenCell = `
+                            <button class="btn btn-info btn-sm"
+                                    onclick="showImageModal('${medicion.url_foto}')">
+                                Ver Imagen
+                            </button>
+                        `;
+                    } else {
+                        imagenCell = '<span class="no-image">Sin imagen</span>';
+                    }
+
+                    row.innerHTML = `
+                        <td>${medicion.id}</td>
+                        <td>${medicion.nro_cuenta}</td>
+                        <td>${medicion.ruta}</td>
+                        <td>${medicion.orden}</td>
+                        <td>${medicion.medicion}</td>
+                        <td>${medicion.fecha}</td>
+                        <td class="${estadoClass}">${medicion.estado}</td>
+                        <td>${medicion.periodo}</td>
+                        <td>${imagenCell}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            };
+
+            // Y actualiza los onclick en la paginación para pasar el evento:
+            const updatePagination = (data) => {
+                const pagination = document.getElementById('pagination');
+                pagination.innerHTML = ''; // Limpiar la paginación anterior
+
+                const currentPage = data.current_page;
+                const lastPage = data.last_page;
+
+                // Botón Anterior
+                const prevLi = document.createElement('li');
+                prevLi.className = `page-item ${currentPage === 1 ? 'disabled' : ''}`;
+                prevLi.innerHTML = `
+                    <a class="page-link" href="#" aria-label="Previous" onclick="loadPage(${currentPage - 1}, event)">
+                        <span aria-hidden="true">&laquo; Anterior</span>
+                    </a>
+                `;
+                pagination.appendChild(prevLi);
+
+                // Números de página
+                for (let i = 1; i <= lastPage; i++) {
+                    const pageLi = document.createElement('li');
+                    pageLi.className = `page-item ${i === currentPage ? 'active' : ''}`;
+                    pageLi.innerHTML = `
+            <a class="page-link" href="#" onclick="loadPage(${i}, event)">${i}</a>
+        `;
+                    pagination.appendChild(pageLi);
+                }
+
+                // Botón Siguiente
+                const nextLi = document.createElement('li');
+                nextLi.className = `page-item ${currentPage === lastPage ? 'disabled' : ''}`;
+                nextLi.innerHTML = `
+        <a class="page-link" href="#" aria-label="Next" onclick="loadPage(${currentPage + 1}, event)">
+            <span aria-hidden="true">Siguiente &raquo;</span>
+        </a>
+    `;
+                pagination.appendChild(nextLi);
+            };
+
+            // Modifica la función loadPage para prevenir el comportamiento predeterminado
+            window.loadPage = (page, event) => {
+                if (event) {
+                    event.preventDefault(); // Esto evita el comportamiento predeterminado del enlace
+                }
+                loadMedicionesData(page);
+            };
+
+            // Función global para mostrar el modal de imagen
+            window.showImageModal = (imageUrl) => {
+                const modalImagen = document.getElementById('modalImagen');
+                modalImagen.src = imageUrl;
+
+                // Inicializar y mostrar el modal
+                const imagenModal = new bootstrap.Modal(document.getElementById('imagenModal'));
+                imagenModal.show();
+            };
+
+            // Cargar los datos iniciales
+            loadMedicionesData(1);
         });
     </script>
 @endpush --}}
-
-
-{{-- // // Manejar el envío del formulario de período
-            // $('#periodoForm').submit(function(event) {
-            //     event.preventDefault(); // Evita el comportamiento por defecto del formulario
-
-            //     let periodo = $('#periodo').val();
-            //     let url = `{{ route('api_exportar_mediciones') }}?periodo=${periodo}`;
-
-            //     // Mostrar mensaje de carga
-            //     Swal.fire({
-            //         title: 'Generando reporte...',
-            //         text: 'Por favor, espere.',
-            //         allowOutsideClick: false,
-            //         didOpen: () => {
-            //             Swal.showLoading()
-            //         }
-            //     });
-
-            //     // Redirige a la URL con el período seleccionado
-            //     $.ajax({
-            //         url: url,
-            //         type: 'GET',
-            //         success: function(response) {
-            //             Swal.close(); // Cierra el mensaje de carga
-            //             window.location.href = url;
-            //         },
-            //         error: function(xhr) {
-            //             Swal.close(); // Cierra el mensaje de carga
-            //             if (xhr.status === 404) {
-            //                 Swal.fire({
-            //                     icon: 'error',
-            //                     title: 'Error',
-            //                     text: 'No se encontraron mediciones para el período especificado.',
-            //                     confirmButtonText: 'Aceptar'
-            //                 });
-            //             } else {
-            //                 Swal.fire({
-            //                     icon: 'error',
-            //                     title: 'Error',
-            //                     text: 'Hubo un problema al generar el reporte.',
-            //                     confirmButtonText: 'Aceptar'
-            //                 });
-            //             }
-            //         }
-            //     });
-            // }); --}}

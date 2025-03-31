@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Route;
 
 Route::prefix('mediciones')->group(function () {
     Route::get('/', [MedicionController::class, 'index'])->name('api.mediciones_index'); // Obtiene un listado con las mediciones.
+    Route::get('listado', [MedicionController::class, 'index2'])->name('api.mediciones_index2');
     Route::post('/nueva', [MedicionController::class, 'store'])->name('api.mediciones_store'); // Crea una nueva medición.
     Route::get('/estados', [EstadoController::class, 'index'])->name('api.medidor_index'); // Obtiene un listado con los estados de los medidores.
     Route::post('/upload', [MedicionController::class, 'upload'])->name("api.medidor_upload");
@@ -17,4 +18,6 @@ Route::prefix('mediciones')->group(function () {
     Route::get('/exportar', [MedicionController::class, 'exportarMediciones'])->name('api_exportar_mediciones');
     Route::get('/anteriores/{nroCuenta}/{fecha}', [MedicionController::class, 'getLecturaAnterior'])->name('api_getLecturaAnterior');
     Route::get('/anteriores/{fecha}', [MedicionController::class, 'getLecturasAnteriores'])->name('api_getLecturasAnteriores');
+
+    Route::post('subir/lecturas', [MedicionController::class, 'subirLecturasPorLote'])->name('api_subir_lecturas');
 });

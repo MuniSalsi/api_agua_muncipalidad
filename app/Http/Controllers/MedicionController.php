@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FotoMedicion;
 use App\Models\Medicion;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -60,6 +61,91 @@ class MedicionController extends Controller
         }
 
         return response()->json($mediciones);
+    }
+
+    public function index2()
+    {
+        try {
+            // Validar parámetros
+            $perPage = request()->input('per_page', 10);
+            $searchTerm = request()->input('search');
+            $fecha = request()->input('date');
+            $estadoId = request()->input('estado');
+
+            if (!is_numeric($perPage) || $perPage < 1 || $perPage > 100) {
+                return response()->json([
+                    'error' => 'El parámetro per_page debe ser un número entre 1 y 100'
+                ], 400);
+            }
+
+            // Consulta base con relaciones
+            $query = Medicion::with(['fotoMedicion', 'obtenerEstado']);
+
+            // Aplicar filtro de búsqueda si existe
+            if ($searchTerm) {
+                $query->where(function ($q) use ($searchTerm) {
+                    $q->where('nro_cuenta', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('ruta', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('orden', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('medicion', 'LIKE', "%{$searchTerm}%")
+                        ->orWhere('codigo_medidor', 'LIKE', "%{$searchTerm}%");
+                });
+            }
+
+            // Filtro por fecha
+            if ($fecha) {
+                $query->whereDate('fecha', $fecha);
+            }
+
+            // Filtro por estado
+            if ($estadoId) {
+                $query->whereHas('obtenerEstado', function ($q) use ($estadoId) {
+                    $q->where('id', $estadoId);
+                });
+            }
+
+            // Paginar resultados
+            $listadoMediciones = $query->orderBy('id', 'desc')->paginate($perPage);
+
+            // Transformar datos
+            $data = $listadoMediciones->map(function ($medicion) {
+                return [
+                    'id' => $medicion->id,
+                    'nro_cuenta' => $medicion->nro_cuenta,
+                    'ruta' => $medicion->ruta,
+                    'orden' => $medicion->orden,
+                    'medicion' => $medicion->medicion,
+                    'fecha' => $medicion->fecha,
+                    'periodo' => $medicion->periodo,
+                    'codigo_medidor' => $medicion->codigo_medidor,
+                    'url_foto' => $medicion->fotoMedicion ? $medicion->fotoMedicion->url_foto : null,
+                    'estado' => $medicion->obtenerEstado ? $medicion->obtenerEstado->tipo : null,
+                ];
+            });
+
+            return response()->json([
+                'current_page' => $listadoMediciones->currentPage(),
+                'data' => $data,
+                'first_page_url' => $listadoMediciones->url(1),
+                'from' => $listadoMediciones->firstItem(),
+                'last_page' => $listadoMediciones->lastPage(),
+                'last_page_url' => $listadoMediciones->url($listadoMediciones->lastPage()),
+                'links' => $listadoMediciones->linkCollection()->toArray(),
+                'next_page_url' => $listadoMediciones->nextPageUrl(),
+                'path' => $listadoMediciones->path(),
+                'per_page' => $listadoMediciones->perPage(),
+                'prev_page_url' => $listadoMediciones->previousPageUrl(),
+                'to' => $listadoMediciones->lastItem(),
+                'total' => $listadoMediciones->total(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Error en MedicionController@index2: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => 'Ocurrió un error al procesar la solicitud',
+                'details' => config('app.debug') ? $e->getMessage() : null
+            ], 500);
+        }
     }
 
     public function store(Request $request)
@@ -197,14 +283,21 @@ class MedicionController extends Controller
         // Obtener el año actual
         $anioActual = Carbon::now()->format('Y');
 
-        // Extraer el número del período usando una expresión regular
-        preg_match('/Periodo (\d+)/', $periodo, $matches);
+        // Extraer el número del período y el año utilizando una expresión regular
+        preg_match('/Periodo (\d+) - (\d+)/', $periodo, $matches);
 
         // Verifica si se encontró un número de periodo
-        if (isset($matches[1])) {
-            $numeroPeriodo = $matches[1];
-            // Formatear el periodo como YYYYPP
-            $codigoPeriodo = sprintf('%s%03d', $anioActual, $numeroPeriodo); // Ejemplo: 2024001
+        if (isset($matches[1]) && isset($matches[2])) {
+            $numeroPeriodo = $matches[1]; // El número del período
+            $anioPeriodo = $matches[2];   // El año del periodo
+
+            // Ajusta el año si es solo un valor de 2 dígitos
+            if (strlen($anioPeriodo) == 2) {
+                $anioPeriodo = '20' . $anioPeriodo;  // Agrega '20' para convertir en un año completo (ejemplo: '25' -> '2025')
+            }
+
+            // Genera el código del período con el año completo
+            $codigoPeriodo = sprintf('Periodo %d - %s', $numeroPeriodo, $anioPeriodo); // Formato: "Periodo 3 - 2025"
         } else {
             return response()->json(['error' => 'El parámetro "periodo" no es válido'], 400);
         }
@@ -214,10 +307,10 @@ class MedicionController extends Controller
         $filename = "Export_mediciones_$fecha.txt";
         $filePath = storage_path("app/public/$filename");
 
-        // Consulta los datos filtrados por el período
+        // Consulta los datos filtrados por el período completo (con año)
         $mediciones = DB::table('mediciones')
             ->select('ruta', 'orden', 'nro_cuenta', 'medicion', 'fecha', 'estado_id', 'created_at')
-            ->where('periodo', $periodo)
+            ->where('periodo', $codigoPeriodo)  // Usar el periodo con año completo
             ->get();
 
         // Verifica si se encontraron mediciones
@@ -257,30 +350,11 @@ class MedicionController extends Controller
                 case 7: // Tapado
                     $anomalia = "0002"; // Anteriormente 'Borroso'
                     break;
-                    // case 1:
-                    //     $anomalia = '0000';
-                    //     break;
-                    // case 2:
-                    //     $anomalia = '0001';
-                    //     break;
-                    // case 3:
-                    //     $anomalia = '0002';
-                    //     break;
-                    // case 4:
-                    //     $anomalia = '0003';
-                    //     break;
-                    // case 5:
-                    //     $anomalia = '0004';
-                    //     break;
-                    // case 6:
-                    //     $anomalia = '0005';
-                    //     break;
             }
 
             // Formatea la fecha y hora
             $fecha = Carbon::parse($medicion->created_at)->format('d/m/Y');
             $hora = Carbon::parse($medicion->created_at)->format('Hi');
-            // $hora = Carbon::parse($medicion->created_at)->format('H:i:s');
             $tipo_servicio = 'Servicio de Agua';
 
             // Formatea los datos en el formato CSV
@@ -295,8 +369,8 @@ class MedicionController extends Controller
                 $anomalia,
                 $fecha,
                 $hora,
-                $codigoPeriodo,
-                $tipo_servicio,
+                $codigoPeriodo, // El periodo completo con el año
+                $tipo_servicio
             );
 
             fwrite($file, $line);
@@ -308,8 +382,10 @@ class MedicionController extends Controller
         return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
+
     public function upload(Request $request)
     {
+        Log::info('REQUEST: ', $request->all());
         // Verificar si se recibe un request multipart/form-data
         if (!$request->isMethod('post') || !$request->hasFile('images')) {
             Log::error('Se esperaba un request multipart/form-data con imágenes');
@@ -449,7 +525,7 @@ class MedicionController extends Controller
 
     private function getPeriodo($fecha)
     {
-        $date = Carbon::parse($fecha);
+        $date = Carbon::parse($fecha);  // Convierte la fecha en un objeto Carbon
 
         // Definir los días de inicio de los períodos
         $rangos = [
@@ -461,7 +537,7 @@ class MedicionController extends Controller
             'Periodo 11' => '21/10',
         ];
 
-        // Verificar los períodos en el año actual y el anterior
+        // Iterar sobre los rangos y comprobar el período correspondiente
         foreach ($rangos as $periodo => $inicio) {
             // Crear la fecha de inicio para el período en el año de la fecha proporcionada
             $fechaInicio = Carbon::createFromFormat('d/m', $inicio)->year($date->year);
@@ -471,66 +547,15 @@ class MedicionController extends Controller
                 $fechaInicio->subYear(); // Ajustamos al año anterior
             }
 
-            // Si estamos en el 21 de diciembre, deberíamos asignar el año siguiente
-            if ($date->format('d/m') === '21/12') {
-                // Si es el 21/12, es el inicio del Periodo 1 del año siguiente
-                $anio = $date->addYear()->format('y');
-                return "{$periodo} - {$anio}";
-            }
-
             // Comprobar si la fecha proporcionada está en el periodo correspondiente
             if ($date->gte($fechaInicio) && $date->lt($fechaInicio->copy()->addMonths(2))) {
-                // Si estamos dentro del rango, asignar el periodo con el año siguiente
-                if ($date->format('d/m') === '21/12' || $date->gte(Carbon::createFromFormat('d/m', '21/12')->year($date->year))) {
-                    $anio = $date->addYear()->format('y');
-                    return "{$periodo} - {$anio}";
-                } else {
-                    // Si no es 21/12, mantener el año actual
-                    $anio = $date->format('y');
-                    return "{$periodo} - {$anio}";
-                }
+                $anio = $date->format('Y');  // Obtener el año correctamente
+                return "{$periodo} - {$anio}";  // Devolver el periodo con el año
             }
         }
 
         return 'Desconocido'; // Si no corresponde a ningún periodo
     }
-
-    // private function getPeriodo($fecha)
-    // {
-    //     $date = Carbon::parse($fecha);
-
-    //     // Definir los rangos de períodos
-    //     $rangos = [
-    //         'Periodo 1' => ['21/12', '20/02'],
-    //         'Periodo 3' => ['21/02', '20/04'],
-    //         'Periodo 5' => ['21/04', '20/06'],
-    //         'Periodo 7' => ['21/06', '20/08'],
-    //         'Periodo 9' => ['21/08', '20/10'],
-    //         'Periodo 11' => ['21/10', '20/12'],
-    //     ];
-
-    //     foreach ($rangos as $periodo => [$inicio, $fin]) {
-    //         // Crear fecha de inicio en el año de la fecha dada
-    //         $fechaInicio = Carbon::createFromFormat('d/m', $inicio)->year($date->year);
-
-    //         // Crear fecha de fin en el año de la fecha dada
-    //         $fechaFin = Carbon::createFromFormat('d/m', $fin)->year($date->year);
-
-    //         // Si el fin del periodo es anterior al inicio, incrementa el año de `fechaFin`
-    //         if ($fechaFin->lessThan($fechaInicio)) {
-    //             $fechaFin->addYear();
-    //         }
-
-    //         // Verificar si la fecha está dentro del rango
-    //         if ($date->between($fechaInicio, $fechaFin)) {
-    //             // Obtener los últimos dos dígitos del año
-    //             $anio = $date->format('y');
-    //             return "{$periodo} - {$anio}";
-    //         }
-    //     }
-
-    //     return 'Desconocido'; // Valor por defecto en caso de error
-    // }
 
 
     private function getPeriodoAnterior($periodoActual)
@@ -617,4 +642,116 @@ class MedicionController extends Controller
             ? response()->json(['message' => 'No se encontraron mediciones anteriores'], 404)
             : response()->json($medicionesConEstado);
     }
+
+    // Funcion para subir las mediciones de la app en lotes:
+    public function subirLecturasPorLote(Request $request)
+    {
+        $mediciones = json_decode($request->mediciones, true);
+        $fotos = $request->file('fotos'); // Array de fotos
+
+        // Validamos si se recibieron mediciones y fotos
+        if (!$mediciones || !is_array($mediciones)) {
+            return response()->json([
+                'error' => true,
+                'message' => 'No se recibieron mediciones válidas.',
+            ], 400); // Error 400 - Bad Request
+        }
+
+        // Procesamos las mediciones en lotes de 20
+        try {
+            foreach (array_chunk($mediciones, 20) as $lote) {
+                foreach ($lote as $index => $medicion) {
+                    $fecha = isset($medicion['fecha']) ? $medicion['fecha'] : null;
+                    $periodo = $fecha ? $this->getPeriodo($fecha) : 'Desconocido';  // Usamos la fecha directamente
+
+                    // Creamos la medición
+                    $nuevaMedicion = Medicion::create([
+                        'nro_cuenta' => $medicion['nroCuenta'],
+                        'ruta' => $medicion['ruta'],
+                        'orden' => $medicion['orden'],
+                        'medicion' => $medicion['medicion'],
+                        'fecha' => $fecha,
+                        'estado_id' => $medicion['estadoId'],
+                        'periodo' => $periodo,
+                        'codigo_medidor' => $medicion['codigoMedidor'],
+                    ]);
+
+                    // Verificamos si hay foto para la medición
+                    if (isset($fotos[$index])) {
+                        try {
+                            $nroCuenta = $medicion['nroCuenta'];
+                            $nombreFoto = $fotos[$index]->getClientOriginalName();
+                            $rutaDestino = "mediciones/{$nroCuenta}/{$nombreFoto}";
+
+                            // Guardamos la foto
+                            $fotos[$index]->storeAs('public', $rutaDestino);
+
+                            // Guardamos la URL de la foto en la tabla fotos_mediciones
+                            FotoMedicion::create([
+                                'url_foto' => "storage/$rutaDestino",
+                                'medicion_id' => $nuevaMedicion->id,
+                            ]);
+                        } catch (\Exception $e) {
+                            Log::error('Error al subir la foto: ' . $e->getMessage());
+                            return response()->json([
+                                'error' => true,
+                                'message' => 'Error al subir la foto para la medición con N° de cuenta ' . $medicion['nroCuenta'],
+                            ], 500); // Error 500 - Internal Server Error
+                        }
+                    }
+                }
+            }
+
+            // Respuesta exitosa
+            return response()->json([
+                'error' => false,
+                'message' => 'Mediciones subidas correctamente.',
+            ], 200); // Éxito
+        } catch (\Exception $e) {
+            // Captura cualquier otro error general
+            Log::error('Error al procesar las mediciones: ' . $e->getMessage());
+            return response()->json([
+                'error' => true,
+                'message' => 'Hubo un error al procesar las mediciones. Por favor, intente nuevamente.',
+            ], 500); // Error 500 - Internal Server Error
+        }
+    }
 }
+
+
+    // private function getPeriodo($fecha)
+    // {
+    //     $date = Carbon::parse($fecha);
+
+    //     // Definir los rangos de períodos
+    //     $rangos = [
+    //         'Periodo 1' => ['21/12', '20/02'],
+    //         'Periodo 3' => ['21/02', '20/04'],
+    //         'Periodo 5' => ['21/04', '20/06'],
+    //         'Periodo 7' => ['21/06', '20/08'],
+    //         'Periodo 9' => ['21/08', '20/10'],
+    //         'Periodo 11' => ['21/10', '20/12'],
+    //     ];
+
+    //     foreach ($rangos as $periodo => [$inicio, $fin]) {
+    //         // Crear fecha de inicio en el año de la fecha dada
+    //         $fechaInicio = Carbon::createFromFormat('d/m', $inicio)->year($date->year);
+
+    //         // Crear fecha de fin en el año de la fecha dada
+    //         $fechaFin = Carbon::createFromFormat('d/m', $fin)->year($date->year);
+
+    //         // Si el fin del periodo es anterior al inicio, incrementa el año de `fechaFin`
+    //         if ($fechaFin->lessThan($fechaInicio)) {
+    //             $fechaFin->addYear();
+    //         }
+
+    //         // Verificar si la fecha está dentro del rango
+    //         if ($date->between($fechaInicio, $fechaFin)) {
+    //             // Obtener los últimos dos dígitos del año
+    //             $anio = $date->format('y');
+    //             return "{$periodo} - {$anio}";
+    //         }
+    //     }
+
+    //     return 'Desconocido'; // Valor por defecto en caso de error
+    // }
